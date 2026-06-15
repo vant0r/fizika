@@ -1,0 +1,141 @@
+<?php
+declare(strict_types=1);
+
+/**
+ * bootstrap.php
+ * -------------
+ * Two-mode bootstrap:
+ *
+ *   ┌─────────────────────────────────────────────────────────────────┐
+ *   │  Mode A — Composer present (vendor/autoload.php exists):        │
+ *   │    • Uses Composer's PSR-4 autoloader for App\ and dependencies │
+ *   │    • Loads .env via vlucas/phpdotenv (richer parser)            │
+ *   │    • firebase/php-jwt is available → AuthManager prefers it     │
+ *   │                                                                 │
+ *   │  Mode B — No Composer (shared host fallback):                   │
+ *   │    • Registers in-house PSR-4 autoloader for App\               │
+ *   │    • Parses .env with a tiny built-in parser                    │
+ *   │    • AuthManager uses its in-house JWT implementation           │
+ *   └─────────────────────────────────────────────────────────────────┘
+ *
+ * Both modes populate $_ENV / $_SERVER / putenv() identically, so the
+ * rest of the application is agnostic to the bootstrap path taken.
+ */
+
+const APP_ROOT = __DIR__;
+
+/* ------------------------------------------------------------------
+ *  Mode A: prefer Composer if vendor/autoload.php is present
+ * ------------------------------------------------------------------ */
+$composerAutoload = APP_ROOT . '/vendor/autoload.php';
+$composerLoaded   = false;
+
+if (is_readable($composerAutoload)) {
+    require $composerAutoload;
+    $composerLoaded = true;
+}
+
+/* ------------------------------------------------------------------
+ *  Mode B: fall back to in-house PSR-4 autoloader
+ * ------------------------------------------------------------------ */
+if (!$composerLoaded) {
+    spl_autoload_register(function (string $class): void {
+        $prefix = 'App\\';
+        $base   = APP_ROOT . '/app/';
+        if (strncmp($class, $prefix, strlen($prefix)) !== 0) return;
+        $rel  = substr($class, strlen($prefix));
+        $file = $base . str_replace('\\', '/', $rel) . '.php';
+        if (is_file($file)) require $file;
+    });
+}
+
+/* ------------------------------------------------------------------
+ *  .env loader  —  prefer vlucas/phpdotenv when available
+ * ------------------------------------------------------------------ */
+(function (): void {
+    $envFile = APP_ROOT . '/.env';
+    if (!is_readable($envFile)) return;
+
+    if (class_exists(\Dotenv\Dotenv::class)) {
+        // phpdotenv path: handles multiline, interpolation, escaping
+        \Dotenv\Dotenv::createImmutable(APP_ROOT)->safeLoad();
+        return;
+    }
+
+    // In-house fallback parser
+    $lines = file($envFile, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
+    foreach ($lines as $line) {
+        if ($line === '' || $line[0] === '#') continue;
+        $eq = strpos($line, '=');
+        if ($eq === false) continue;
+        $key = trim(substr($line, 0, $eq));
+        $val = trim(substr($line, $eq + 1));
+        if (strlen($val) >= 2 && (
+            ($val[0] === '"' && $val[-1] === '"') ||
+            ($val[0] === "'" && $val[-1] === "'")
+        )) {
+            $val = substr($val, 1, -1);
+        }
+        if (getenv($key) === false) {
+            putenv("$key=$val");
+            $_ENV[$key]    = $val;
+            $_SERVER[$key] = $val;
+        }
+    }
+})();
+
+/* ------------------------------------------------------------------
+ *  Required-env validation (fail fast on misconfiguration)
+ * ------------------------------------------------------------------ */
+foreach (['APP_KEY', 'DB_MASTER_DSN'] as $required) {
+    if (((string) getenv($required)) === '') {
+        if (PHP_SAPI === 'cli') {
+            fwrite(STDERR, "Missing required env var: $required\n");
+            exit(1);
+        }
+        // In HTTP context, surface a hard 500 — never leak which one
+        http_response_code(500);
+        header('Content-Type: text/plain; charset=utf-8');
+        echo 'Configuration error.';
+        exit;
+    }
+}
+
+/* ------------------------------------------------------------------
+ *  Runtime configuration
+ * ------------------------------------------------------------------ */
+$env = (string) (getenv('APP_ENV') ?: 'production');
+
+date_default_timezone_set((string) (getenv('APP_TIMEZONE') ?: 'Asia/Tashkent'));
+ini_set('default_charset', 'UTF-8');
+mb_internal_encoding('UTF-8');
+
+if ($env === 'production') {
+    error_reporting(E_ALL & ~E_DEPRECATED & ~E_STRICT);
+    ini_set('display_errors', '0');
+    ini_set('log_errors', '1');
+} else {
+    error_reporting(E_ALL);
+    ini_set('display_errors', '1');
+}
+
+/* ------------------------------------------------------------------
+ *  Global exception handler — never leak internals
+ * ------------------------------------------------------------------ */
+set_exception_handler(function (\Throwable $e) use ($env): void {
+    error_log('[FATAL] ' . $e->getMessage() . "\n" . $e->getTraceAsString());
+    if (!headers_sent()) {
+        http_response_code(500);
+        header('Content-Type: application/json; charset=utf-8');
+    }
+    echo json_encode([
+        'error'  => 'Internal Server Error',
+        'detail' => $env === 'production' ? null : $e->getMessage(),
+    ], JSON_UNESCAPED_UNICODE);
+    exit;
+});
+
+/* ------------------------------------------------------------------
+ *  Session bootstrap (uses hardened settings from Security)
+ * ------------------------------------------------------------------ */
+\App\Core\Security::ensureSession();

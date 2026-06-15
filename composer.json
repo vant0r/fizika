@@ -1,0 +1,62 @@
+{
+    "name": "physics-cert/platform",
+    "description": "Physics National Certificate — Mega-Platforma SaaS",
+    "type": "project",
+    "license": "proprietary",
+    "keywords": ["physics", "exam", "saas", "certificate"],
+
+    "require": {
+        "php": ">=8.1",
+        "ext-pdo": "*",
+        "ext-pdo_mysql": "*",
+        "ext-mbstring": "*",
+        "ext-json": "*",
+        "ext-curl": "*",
+        "ext-fileinfo": "*",
+        "ext-libxml": "*",
+        "ext-dom": "*",
+        "ext-openssl": "*",
+
+        "firebase/php-jwt": "^6.10",
+        "vlucas/phpdotenv": "^5.6"
+    },
+
+    "require-dev": {
+        "phpunit/phpunit": "^10.5"
+    },
+
+    "suggest": {
+        "ext-apcu": "Enables in-memory rate limiting (faster than MySQL fallback)",
+        "ext-redis": "Enables Redis-backed sessions and rate limits in cluster mode",
+        "enshrined/svg-sanitize": "Alternative SVG sanitizer (in-house DOMDocument-based one ships by default)"
+    },
+
+    "autoload": {
+        "psr-4": {
+            "App\\": "app/"
+        }
+    },
+
+    "autoload-dev": {
+        "psr-4": {
+            "Tests\\": "tests/"
+        }
+    },
+
+    "config": {
+        "optimize-autoloader": true,
+        "preferred-install": "dist",
+        "sort-packages": true,
+        "platform-check": true
+    },
+
+    "scripts": {
+        "gc":         "php bin/gc.php",
+        "serve":      "php -S 0.0.0.0:8080 -t public",
+        "lint":       "find app public views bin -name '*.php' -o -name '*.phtml' | xargs -I{} php -l {}",
+        "test":       "php .kiro/csrf_test.php && php .kiro/svg_sanitizer_test.php && php .kiro/gc_test.php"
+    },
+
+    "minimum-stability": "stable",
+    "prefer-stable": true
+}

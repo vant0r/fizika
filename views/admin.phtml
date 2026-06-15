@@ -1,0 +1,1671 @@
+<?php
+use App\Core\Security;
+/** @var array<string,mixed> $admin */
+/** @var string $csrf */
+/** @var string $logo */
+?><!DOCTYPE html>
+<html lang="uz">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin · Physics National Certificate</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;800&family=Inter:wght@300;400;500;700;900&display=swap" rel="stylesheet">
+
+    <!-- MathJax for question preview (LaTeX) -->
+    <script>
+        window.MathJax = {
+            tex: { inlineMath: [['$','$']], displayMath: [['$$','$$']], processEscapes: true },
+            svg: { fontCache: 'global' },
+            startup: { typeset: false },
+        };
+    </script>
+    <script async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js"></script>
+
+    <!-- QRCode generator (used only for 2FA enrollment) -->
+    <script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.min.js"></script>
+    <style>
+        :root { --bd: 1px solid #000; }
+        html, body { background:#fff; color:#000; font-family:'Inter',sans-serif; }
+        .mono { font-family:'JetBrains Mono', monospace; letter-spacing:-.02em; }
+        .brutal { border: var(--bd); }
+        .brutal-thick { border: 2px solid #000; }
+        .hover-fill:hover { background:#f3f3f3; transition: background .12s; }
+        ::selection { background:#000; color:#fff; }
+        input, textarea, select, button { outline:none; }
+        input:focus, textarea:focus, select:focus { background:#fafafa; }
+        .btn-brutal { border: 2px solid #000; padding:.5rem 1rem; font-weight:700; text-transform:uppercase; letter-spacing:.04em; transition: all .12s; cursor:pointer; }
+        .btn-brutal:hover { background:#000; color:#fff; }
+        .btn-brutal:active { transform: translate(1px,1px); }
+        .btn-brutal[disabled] { opacity:.5; cursor:not-allowed; }
+        .btn-ghost { border: 1px solid #000; padding:.35rem .75rem; font-size:.7rem; text-transform:uppercase; letter-spacing:.06em; cursor:pointer; background:#fff; }
+        .btn-ghost:hover { background:#f3f3f3; }
+        .btn-danger { border: 2px solid #000; padding:.35rem .75rem; font-size:.7rem; text-transform:uppercase; letter-spacing:.06em; cursor:pointer; background:#fff; }
+        .btn-danger:hover { background:#000; color:#fff; }
+        .cell { border-right: var(--bd); }
+        .cell:last-child { border-right:0; }
+        .row { border-top: var(--bd); }
+        .row:first-child { border-top:0; }
+        .nav-item {
+            display:block; padding:.85rem 1rem;
+            font-family:'JetBrains Mono', monospace;
+            text-transform:uppercase; letter-spacing:.06em; font-size:.75rem;
+            border-top: var(--bd);
+            cursor:pointer;
+            background:#fff;
+            text-align:left; width:100%;
+        }
+        .nav-item:first-child { border-top:0; }
+        .nav-item:hover { background:#f3f3f3; }
+        .nav-item.is-active { background:#000; color:#fff; }
+        .nav-item .badge {
+            display:inline-block; min-width:18px; padding:0 6px; height:18px;
+            line-height:18px; text-align:center; font-size:10px;
+            border:1px solid currentColor; margin-left:6px;
+        }
+        .pane { display:none; }
+        .pane.is-active { display:block; }
+        .field { display:flex; flex-direction:column; gap:.35rem; }
+        .field label { font-size:10px; text-transform:uppercase; letter-spacing:.08em; font-family:'JetBrains Mono', monospace; }
+        .field input, .field textarea, .field select { border: var(--bd); padding:.65rem .75rem; background:#fff; }
+        .toast {
+            position:fixed; right:20px; bottom:20px; z-index:60;
+            background:#000; color:#fff; padding:.75rem 1rem;
+            font-family:'JetBrains Mono', monospace; font-size:.75rem;
+            text-transform:uppercase; letter-spacing:.06em;
+            transform: translateY(100px); opacity:0;
+            transition: all .25s;
+        }
+        .toast.show { transform: translateY(0); opacity:1; }
+        .toast.error { background:#fff; color:#000; border:2px solid #000; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .spin { display:inline-block; animation: spin 1s linear infinite; }
+        .modal-bg { position:fixed; inset:0; background:rgba(0,0,0,.35); display:none; align-items:center; justify-content:center; z-index:50; padding:1rem; }
+        .modal-bg.show { display:flex; }
+        .ticker { white-space:nowrap; overflow:hidden; }
+        .ticker > div { display:inline-block; padding-left:100%; animation: tk 30s linear infinite; }
+        @keyframes tk { 0%{transform:translateX(0);} 100%{transform:translateX(-100%);} }
+    </style>
+</head>
+<body class="min-h-screen">
+
+<!-- ============ HEADER ============ -->
+<header class="brutal border-l-0 border-r-0 border-t-0 sticky top-0 bg-white z-30">
+    <div class="max-w-[1400px] mx-auto flex items-center justify-between px-6 py-3">
+        <div class="flex items-center gap-4">
+            <img src="<?= Security::eAttr($logo) ?>" alt="" class="h-8 w-8 brutal object-contain bg-white" onerror="this.style.display='none'">
+            <span class="mono font-extrabold tracking-tight text-lg">PHYSICS // CERT</span>
+            <span class="brutal px-2 py-0.5 text-[10px] uppercase tracking-widest mono">ADMIN</span>
+        </div>
+        <div class="flex items-center gap-3">
+            <span class="mono text-xs uppercase tracking-widest opacity-60">
+                <?= Security::e((string) $admin['fullname']) ?>
+            </span>
+            <a href="/profile" class="btn-ghost">profil</a>
+            <button id="logoutBtn" class="btn-ghost">chiqish</button>
+        </div>
+    </div>
+    <div class="brutal border-l-0 border-r-0 border-b-0 ticker text-[10px] mono uppercase tracking-widest py-1 bg-white">
+        <div>admin boshqaruv markazi &middot; to'lovlar verifikatsiya &middot; tariflar &middot; sayt sozlamalari &middot; logo &middot; slider &middot; humo &amp; visa kartalar &middot;</div>
+    </div>
+</header>
+
+<!-- ============ LAYOUT ============ -->
+<div class="max-w-[1400px] mx-auto grid grid-cols-12 gap-0 brutal-thick m-4">
+
+    <!-- ============ SIDEBAR ============ -->
+    <aside class="col-span-12 lg:col-span-2 brutal border-l-0 border-t-0 border-b-0 lg:border-b-0">
+        <div class="p-4 brutal border-l-0 border-r-0 border-t-0">
+            <div class="text-[10px] mono uppercase tracking-widest opacity-60">Bo'limlar</div>
+        </div>
+        <button class="nav-item is-active" data-pane="dashboard">[01] Dashboard</button>
+        <button class="nav-item" data-pane="payments">[02] To'lovlar <span id="navPaymentsBadge" class="badge">0</span></button>
+        <button class="nav-item" data-pane="tariffs">[03] Tariflar</button>
+        <button class="nav-item" data-pane="exams">[04] Imtihonlar</button>
+        <button class="nav-item" data-pane="settings">[05] Sozlamalar</button>
+    </aside>
+
+    <!-- ============ MAIN ============ -->
+    <main class="col-span-12 lg:col-span-10 p-6 lg:p-8 min-h-[600px]">
+
+        <!-- =============== DASHBOARD =============== -->
+        <section class="pane is-active" data-pane="dashboard">
+            <div class="flex items-baseline justify-between mb-6">
+                <h1 class="mono text-3xl font-black">[ DASHBOARD ]</h1>
+                <span class="text-xs mono uppercase tracking-widest opacity-60" id="lastRefreshDash">—</span>
+            </div>
+
+            <div class="grid grid-cols-2 lg:grid-cols-4 brutal-thick">
+                <div class="cell row p-6">
+                    <div class="text-[10px] uppercase tracking-widest mono opacity-60">Kutayotgan to'lovlar</div>
+                    <div class="mono text-4xl font-black mt-2" id="kpiPending">—</div>
+                </div>
+                <div class="cell row p-6">
+                    <div class="text-[10px] uppercase tracking-widest mono opacity-60">Foydalanuvchilar</div>
+                    <div class="mono text-4xl font-black mt-2" id="kpiUsers">—</div>
+                </div>
+                <div class="cell row p-6">
+                    <div class="text-[10px] uppercase tracking-widest mono opacity-60">Faol imtihonlar</div>
+                    <div class="mono text-4xl font-black mt-2" id="kpiExams">—</div>
+                </div>
+                <div class="row p-6">
+                    <div class="text-[10px] uppercase tracking-widest mono opacity-60">Bugungi daromad</div>
+                    <div class="mono text-4xl font-black mt-2"><span id="kpiRevenue">—</span> <span class="text-sm opacity-60">so'm</span></div>
+                </div>
+            </div>
+
+            <div class="mt-8 grid grid-cols-1 lg:grid-cols-2 gap-4">
+                <div class="brutal p-6">
+                    <div class="text-[10px] uppercase tracking-widest mono opacity-60 mb-2">Yo'l yo'riq</div>
+                    <h2 class="mono text-xl font-extrabold">⌘ Tezkor amallar</h2>
+                    <ul class="mt-4 space-y-2 text-sm">
+                        <li class="brutal p-3 hover-fill cursor-pointer" data-jump="payments">→ Kutayotgan to'lovlarni tekshirish</li>
+                        <li class="brutal p-3 hover-fill cursor-pointer" data-jump="tariffs">→ Tarif qo'shish/tahrirlash</li>
+                        <li class="brutal p-3 hover-fill cursor-pointer" data-jump="settings">→ Logo va kartalarni yangilash</li>
+                    </ul>
+                </div>
+                <div class="brutal p-6">
+                    <div class="text-[10px] uppercase tracking-widest mono opacity-60 mb-2">Tizim holati</div>
+                    <h2 class="mono text-xl font-extrabold">⏻ Servis</h2>
+                    <ul class="mt-4 mono text-xs space-y-1.5">
+                        <li class="flex justify-between"><span>CSP</span><span>● enabled</span></li>
+                        <li class="flex justify-between"><span>HSTS</span><span>● 1y</span></li>
+                        <li class="flex justify-between"><span>JWT</span><span>● HS256</span></li>
+                        <li class="flex justify-between"><span>CSRF rolling</span><span>● rotation enabled</span></li>
+                        <li class="flex justify-between"><span>Argon2id</span><span>● m=64MB t=4 p=2</span></li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- ============ MAINTENANCE / GC ============ -->
+            <div class="mt-4 brutal-thick p-6">
+                <div class="flex items-baseline justify-between mb-4">
+                    <div>
+                        <div class="text-[10px] uppercase tracking-widest mono opacity-60">Servis &amp; Tozalash</div>
+                        <h2 class="mono text-xl font-extrabold">⌬ MAINTENANCE</h2>
+                    </div>
+                    <button id="runGcBtn" class="btn-brutal">↻ GC ishga tushir</button>
+                </div>
+
+                <div class="grid grid-cols-2 lg:grid-cols-5 gap-0 brutal">
+                    <div class="cell p-4">
+                        <div class="text-[10px] uppercase tracking-widest mono opacity-60">Rate-limit jami</div>
+                        <div class="mono text-2xl font-black mt-1" id="mtRlTotal">—</div>
+                    </div>
+                    <div class="cell p-4">
+                        <div class="text-[10px] uppercase tracking-widest mono opacity-60">Rate-limit muddati o'tgan</div>
+                        <div class="mono text-2xl font-black mt-1" id="mtRlExpired">—</div>
+                    </div>
+                    <div class="cell p-4">
+                        <div class="text-[10px] uppercase tracking-widest mono opacity-60">TG sessiyalar</div>
+                        <div class="mono text-2xl font-black mt-1" id="mtTgTotal">—</div>
+                    </div>
+                    <div class="cell p-4">
+                        <div class="text-[10px] uppercase tracking-widest mono opacity-60">TG eski (7+ kun)</div>
+                        <div class="mono text-2xl font-black mt-1" id="mtTgIdle">—</div>
+                    </div>
+                    <div class="p-4">
+                        <div class="text-[10px] uppercase tracking-widest mono opacity-60">Tikilib qolgan imtihonlar (24h+)</div>
+                        <div class="mono text-2xl font-black mt-1" id="mtStuckExams">—</div>
+                    </div>
+                </div>
+
+                <!-- Queue strip -->
+                <div class="grid grid-cols-2 lg:grid-cols-5 gap-0 brutal mt-3">
+                    <div class="cell p-4">
+                        <div class="text-[10px] uppercase tracking-widest mono opacity-60">Queue: kutilmoqda</div>
+                        <div class="mono text-2xl font-black mt-1" id="mtQuPending">—</div>
+                    </div>
+                    <div class="cell p-4">
+                        <div class="text-[10px] uppercase tracking-widest mono opacity-60">Queue: ishlanyapti</div>
+                        <div class="mono text-2xl font-black mt-1" id="mtQuProcessing">—</div>
+                    </div>
+                    <div class="cell p-4">
+                        <div class="text-[10px] uppercase tracking-widest mono opacity-60">Queue: muvaffaqiyatsiz</div>
+                        <div class="mono text-2xl font-black mt-1" id="mtQuFailed">—</div>
+                    </div>
+                    <div class="cell p-4">
+                        <div class="text-[10px] uppercase tracking-widest mono opacity-60">Yuborilgan (24h)</div>
+                        <div class="mono text-2xl font-black mt-1" id="mtQuSent24">—</div>
+                    </div>
+                    <div class="p-4">
+                        <div class="text-[10px] uppercase tracking-widest mono opacity-60">Worker holati</div>
+                        <div class="mono text-sm font-bold mt-1" id="mtWorkerStatus">—</div>
+                    </div>
+                </div>
+
+                <div class="mt-4 mono text-[10px] uppercase tracking-widest opacity-60 leading-relaxed">
+                    Cron (GC): <code class="brutal px-2 py-0.5">*/5 * * * *  /usr/bin/php /var/www/physics-cert/bin/gc.php</code><br>
+                    Cron (worker): <code class="brutal px-2 py-0.5">* * * * *  /usr/bin/php /var/www/physics-cert/bin/worker.php --once</code><br>
+                    Yoki systemd: <code class="brutal px-2 py-0.5">/usr/bin/php bin/worker.php</code> (Restart=always).
+                </div>
+            </div>
+        </section>
+
+        <!-- =============== PAYMENTS =============== -->
+        <section class="pane" data-pane="payments">
+            <div class="flex items-baseline justify-between mb-6">
+                <h1 class="mono text-3xl font-black">[ TO'LOVLAR ]</h1>
+                <div class="flex items-center gap-1">
+                    <button class="btn-ghost is-active-tab" data-status="pending">Pending</button>
+                    <button class="btn-ghost" data-status="approved">Approved</button>
+                    <button class="btn-ghost" data-status="rejected">Rejected</button>
+                </div>
+            </div>
+
+            <div class="brutal-thick">
+                <div class="grid grid-cols-12 row text-[10px] uppercase tracking-widest mono">
+                    <div class="cell p-3 col-span-1">ID</div>
+                    <div class="cell p-3 col-span-3">Foydalanuvchi</div>
+                    <div class="cell p-3 col-span-2">Tarif</div>
+                    <div class="cell p-3 col-span-1 text-right">Summa</div>
+                    <div class="cell p-3 col-span-1 text-center">Chek</div>
+                    <div class="cell p-3 col-span-2 text-center">Sana</div>
+                    <div class="p-3 col-span-2 text-center">Amallar</div>
+                </div>
+                <div id="paymentsBody">
+                    <div class="row p-6 text-center mono text-sm opacity-60">Yuklanmoqda...</div>
+                </div>
+            </div>
+        </section>
+
+        <!-- =============== TARIFFS =============== -->
+        <section class="pane" data-pane="tariffs">
+            <div class="flex items-baseline justify-between mb-6">
+                <h1 class="mono text-3xl font-black">[ TARIFLAR ]</h1>
+                <button id="addTariffBtn" class="btn-brutal">+ Yangi tarif</button>
+            </div>
+
+            <div class="brutal-thick mb-6">
+                <div class="grid grid-cols-12 row text-[10px] uppercase tracking-widest mono">
+                    <div class="cell p-3 col-span-1">ID</div>
+                    <div class="cell p-3 col-span-3">Nomi</div>
+                    <div class="cell p-3 col-span-2 text-right">Narx</div>
+                    <div class="cell p-3 col-span-1 text-center">Mock</div>
+                    <div class="cell p-3 col-span-2 text-center">Holat</div>
+                    <div class="cell p-3 col-span-1 text-center">Tartib</div>
+                    <div class="p-3 col-span-2 text-center">Amallar</div>
+                </div>
+                <div id="tariffsBody">
+                    <div class="row p-6 text-center mono text-sm opacity-60">Yuklanmoqda...</div>
+                </div>
+            </div>
+
+            <!-- Inline editor -->
+            <div id="tariffEditor" class="brutal-thick p-6 hidden">
+                <div class="flex items-baseline justify-between mb-4">
+                    <h2 class="mono text-xl font-extrabold" id="tariffEditorTitle">[ YANGI TARIF ]</h2>
+                    <button id="closeTariffEditor" class="btn-ghost">[X] yopish</button>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div class="field md:col-span-2">
+                        <label>Nomi</label>
+                        <input type="text" id="tfName" placeholder="masalan: PRO PAKET">
+                    </div>
+                    <div class="field">
+                        <label>Narx (so'm)</label>
+                        <input type="number" id="tfPrice" min="0" step="1000">
+                    </div>
+                    <div class="field">
+                        <label>Mock soni</label>
+                        <input type="number" id="tfMockCount" min="0" step="1">
+                    </div>
+                    <div class="field md:col-span-2">
+                        <label>Tavsif</label>
+                        <textarea id="tfDescription" rows="2"></textarea>
+                    </div>
+                    <div class="field">
+                        <label>Tartib raqami</label>
+                        <input type="number" id="tfSortOrder" min="0" step="1" value="0">
+                    </div>
+                    <div class="field">
+                        <label>Holat</label>
+                        <label class="brutal p-2 flex items-center gap-2 cursor-pointer hover-fill">
+                            <input type="checkbox" id="tfIsActive" checked>
+                            <span class="mono text-xs uppercase tracking-widest">Faol</span>
+                        </label>
+                    </div>
+                </div>
+                <div class="mt-6 flex items-center gap-3">
+                    <button id="saveTariffBtn" class="btn-brutal">→ Saqlash</button>
+                    <button id="closeTariffEditor2" class="btn-ghost">bekor qilish</button>
+                    <input type="hidden" id="tfId" value="0">
+                </div>
+            </div>
+        </section>
+
+        <!-- =============== EXAMS + QUESTIONS =============== -->
+        <section class="pane" data-pane="exams">
+            <!-- Exams list view -->
+            <div id="examsListView">
+                <div class="flex items-baseline justify-between mb-6">
+                    <h1 class="mono text-3xl font-black">[ IMTIHONLAR ]</h1>
+                    <button id="addExamBtn" class="btn-brutal">+ Yangi imtihon</button>
+                </div>
+
+                <div class="brutal-thick mb-6">
+                    <div class="grid grid-cols-12 row text-[10px] uppercase tracking-widest mono">
+                        <div class="cell p-3 col-span-1">ID</div>
+                        <div class="cell p-3 col-span-3">Sarlavha</div>
+                        <div class="cell p-3 col-span-1 text-center">Fan</div>
+                        <div class="cell p-3 col-span-1 text-center">Vaqt</div>
+                        <div class="cell p-3 col-span-1 text-center">Savollar</div>
+                        <div class="cell p-3 col-span-1 text-center">Topshirilgan</div>
+                        <div class="cell p-3 col-span-2 text-center">Holat</div>
+                        <div class="p-3 col-span-2 text-center">Amallar</div>
+                    </div>
+                    <div id="examsBody">
+                        <div class="row p-6 text-center mono text-sm opacity-60">Yuklanmoqda...</div>
+                    </div>
+                </div>
+
+                <!-- Inline exam editor -->
+                <div id="examEditor" class="brutal-thick p-6 hidden">
+                    <div class="flex items-baseline justify-between mb-4">
+                        <h2 class="mono text-xl font-extrabold" id="examEditorTitle">[ YANGI IMTIHON ]</h2>
+                        <button class="btn-ghost" onclick="closeExamEditor()">[X] yopish</button>
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div class="field md:col-span-2">
+                            <label>Sarlavha</label>
+                            <input id="exTitle" type="text" placeholder="masalan: Fizika · 1-mock · Mexanika">
+                        </div>
+                        <div class="field">
+                            <label>Fan</label>
+                            <input id="exSubject" type="text" value="Fizika">
+                        </div>
+                        <div class="field">
+                            <label>Holat</label>
+                            <select id="exStatus" class="brutal p-2">
+                                <option value="draft">Loyiha (draft)</option>
+                                <option value="published">Nashr etilgan (published)</option>
+                                <option value="archived">Arxiv (archived)</option>
+                            </select>
+                        </div>
+                        <div class="field">
+                            <label>Davomiyligi (daqiqa)</label>
+                            <input id="exDuration" type="number" min="1" max="360" value="120">
+                        </div>
+                        <div class="field">
+                            <label>Savollar soni (kutilgan)</label>
+                            <input id="exTotalQty" type="number" min="1" max="200" value="30">
+                        </div>
+                    </div>
+                    <div class="mt-6 flex items-center gap-3">
+                        <button id="saveExamBtn" class="btn-brutal">→ Saqlash</button>
+                        <button class="btn-ghost" onclick="closeExamEditor()">bekor qilish</button>
+                        <input type="hidden" id="exId" value="0">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Questions view (per-exam) -->
+            <div id="questionsView" class="hidden">
+                <div class="flex items-center justify-between mb-6 gap-3 flex-wrap">
+                    <div class="flex items-center gap-3">
+                        <button id="backToExams" class="btn-ghost">← Imtihonlarga qaytish</button>
+                        <h1 class="mono text-2xl font-black">[ SAVOLLAR &middot; <span id="qExamTitle">—</span> ]</h1>
+                    </div>
+                    <button id="addQuestionBtn" class="btn-brutal">+ Yangi savol</button>
+                </div>
+
+                <div id="questionsList" class="space-y-3">
+                    <div class="brutal p-6 text-center mono text-sm opacity-60">Yuklanmoqda...</div>
+                </div>
+
+                <!-- Inline question editor -->
+                <div id="questionEditor" class="brutal-thick p-6 mt-6 hidden">
+                    <div class="flex items-baseline justify-between mb-4">
+                        <h2 class="mono text-xl font-extrabold" id="qEditorTitle">[ YANGI SAVOL ]</h2>
+                        <button class="btn-ghost" onclick="closeQuestionEditor()">[X] yopish</button>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div class="field md:col-span-2">
+                            <label>Savol matni · LaTeX qo'llab-quvvatlanadi ($...$ va $$...$$)</label>
+                            <textarea id="qText" rows="4" placeholder="Mexanika: $F = m \cdot a$ formuladagi $a$ tezlanish bo'lsa..."></textarea>
+                            <div class="mt-2 text-[10px] mono uppercase tracking-widest opacity-60">Live preview ↓</div>
+                            <div id="qPreview" class="brutal p-4 mt-1 min-h-[60px] leading-relaxed bg-white"></div>
+                        </div>
+                        <div class="space-y-3">
+                            <div class="field">
+                                <label>Tur</label>
+                                <select id="qType" class="brutal p-2">
+                                    <option value="mcq">MCQ — variantli</option>
+                                    <option value="open">Open — ochiq javob</option>
+                                    <option value="matching">Matching — moslash</option>
+                                </select>
+                            </div>
+                            <div class="field">
+                                <label>Bo'lim</label>
+                                <input id="qSection" type="text" placeholder="Mexanika / Optika / ..." value="Umumiy" list="sectionList">
+                                <datalist id="sectionList">
+                                    <option>Mexanika</option><option>Termodinamika</option>
+                                    <option>Elektr</option><option>Optika</option>
+                                    <option>Atom va yadro</option><option>To'lqinlar</option>
+                                </datalist>
+                            </div>
+                            <div class="field">
+                                <label>Murakkablik (1..5)</label>
+                                <input id="qDifficulty" type="number" min="1" max="5" value="2">
+                            </div>
+                            <div class="field">
+                                <label>Vazn (BMBA koeffitsienti)</label>
+                                <input id="qWeight" type="number" step="0.1" min="0.1" value="1.0">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Type-specific editor area -->
+                    <div class="mt-6">
+                        <div id="qMcqEditor" class="space-y-2">
+                            <div class="text-[10px] mono uppercase tracking-widest opacity-60 mb-1">Variantlar (kalit + matn) · to'g'risini tanlang</div>
+                            <div id="qMcqOptions" class="space-y-2"></div>
+                            <button id="qAddMcqOpt" class="btn-ghost mt-2">+ variant</button>
+                        </div>
+
+                        <div id="qOpenEditor" class="hidden">
+                            <div class="field">
+                                <label>To'g'ri javob (matn yoki son, registrga qaramaydi)</label>
+                                <input id="qOpenAnswer" type="text" placeholder="9.8 yoki gravitatsiya doimiysi">
+                            </div>
+                        </div>
+
+                        <div id="qMatchingEditor" class="hidden">
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div>
+                                    <div class="text-[10px] mono uppercase tracking-widest opacity-60 mb-1">Chap ustun</div>
+                                    <textarea id="qMatchLeft" rows="4" placeholder="Har qatorga bittadan&#10;Kuch&#10;Tezlik&#10;Energiya"></textarea>
+                                </div>
+                                <div>
+                                    <div class="text-[10px] mono uppercase tracking-widest opacity-60 mb-1">O'ng ustun</div>
+                                    <textarea id="qMatchRight" rows="4" placeholder="Har qatorga bittadan&#10;N&#10;m/s&#10;J"></textarea>
+                                </div>
+                            </div>
+                            <div class="mt-3">
+                                <div class="text-[10px] mono uppercase tracking-widest opacity-60 mb-1">To'g'ri moslashuv</div>
+                                <div id="qMatchPairs" class="space-y-2"></div>
+                                <button id="qBuildPairs" class="btn-ghost mt-2">↻ chap qatordan moslashlar yaratish</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-6">
+                        <div class="field md:col-span-2">
+                            <label>Yechim (ixtiyoriy, LaTeX qo'llab-quvvatlanadi)</label>
+                            <textarea id="qSolution" rows="3" placeholder="$$F = m \cdot a = 5 \cdot 9.8 = 49 \text{ N}$$"></textarea>
+                        </div>
+                        <div class="field md:col-span-2">
+                            <label>Video havolasi (ixtiyoriy)</label>
+                            <input id="qVideoUrl" type="url" placeholder="https://youtube.com/watch?v=...">
+                        </div>
+                    </div>
+
+                    <div class="mt-6 flex items-center gap-3">
+                        <button id="saveQuestionBtn" class="btn-brutal">→ Saqlash</button>
+                        <button class="btn-ghost" onclick="closeQuestionEditor()">bekor qilish</button>
+                        <input type="hidden" id="qId"     value="0">
+                        <input type="hidden" id="qExamId" value="0">
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- =============== SETTINGS =============== -->
+        <section class="pane" data-pane="settings">
+            <h1 class="mono text-3xl font-black mb-6">[ SOZLAMALAR ]</h1>
+
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+
+                <!-- Logo -->
+                <div class="brutal-thick p-6">
+                    <div class="text-[10px] uppercase tracking-widest mono opacity-60">Sayt logosi</div>
+                    <h2 class="mono text-xl font-extrabold mt-1">⌖ LOGO</h2>
+
+                    <div class="mt-4 brutal p-4 flex items-center justify-center" style="min-height:120px;">
+                        <img id="currentLogo" src="<?= Security::eAttr($logo) ?>" alt="logo"
+                             class="max-h-24 object-contain" onerror="this.replaceWith(emptyState('logo yo\'q'))">
+                    </div>
+
+                    <form id="logoForm" class="mt-4 space-y-3">
+                        <input type="file" name="logo" accept="image/png,image/jpeg,image/webp,image/svg+xml"
+                               class="brutal p-2 w-full">
+                        <button type="submit" class="btn-brutal w-full">↳ Logo yuklash</button>
+                    </form>
+                    <div class="mt-2 mono text-[10px] uppercase tracking-widest opacity-60">PNG / JPG / WEBP / SVG (sanitized) &middot; max 5MB</div>
+                </div>
+
+                <!-- Cards -->
+                <div class="brutal-thick p-6">
+                    <div class="text-[10px] uppercase tracking-widest mono opacity-60">To'lov kartalari</div>
+                    <h2 class="mono text-xl font-extrabold mt-1">⌗ HUMO &amp; VISA</h2>
+
+                    <div class="mt-4 space-y-3">
+                        <div class="field">
+                            <label>HUMO karta</label>
+                            <input id="humoCard" type="text" placeholder="9860 0101 0000 0000">
+                        </div>
+                        <div class="field">
+                            <label>VISA karta</label>
+                            <input id="visaCard" type="text" placeholder="4000 0000 0000 0000">
+                        </div>
+                        <div class="field">
+                            <label>Karta egasi</label>
+                            <input id="cardHolder" type="text" placeholder="ISM FAMILIYA / LLC">
+                        </div>
+                        <button id="saveCardsBtn" class="btn-brutal w-full">→ Kartalarni saqlash</button>
+                    </div>
+                </div>
+
+                <!-- Slider -->
+                <div class="brutal-thick p-6 lg:col-span-2">
+                    <div class="text-[10px] uppercase tracking-widest mono opacity-60">Bosh sahifa slayder</div>
+                    <h2 class="mono text-xl font-extrabold mt-1">⌥ SLIDER</h2>
+
+                    <div id="sliderGrid" class="mt-4 grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+                        <div class="brutal p-6 text-center mono text-xs opacity-60 col-span-full">Yuklanmoqda...</div>
+                    </div>
+
+                    <form id="sliderForm" class="mt-4 flex flex-col md:flex-row items-stretch gap-3">
+                        <input type="file" name="slide" accept="image/png,image/jpeg,image/webp"
+                               class="brutal p-2 flex-1">
+                        <button type="submit" class="btn-brutal">+ Slayd qo'shish</button>
+                    </form>
+                    <div class="mt-2 mono text-[10px] uppercase tracking-widest opacity-60">PNG / JPG / WEBP &middot; max 5MB &middot; tartib yuklanish bo'yicha</div>
+                </div>
+
+                <!-- ============ 2FA / Xavfsizlik ============ -->
+                <div class="brutal-thick p-6 lg:col-span-2">
+                    <div class="text-[10px] uppercase tracking-widest mono opacity-60">Xavfsizlik (Two-factor)</div>
+                    <h2 class="mono text-xl font-extrabold mt-1">⌬ 2FA / TOTP</h2>
+
+                    <!-- Status -->
+                    <div id="tfaStatusBox" class="mt-4 brutal p-4 mono text-sm">
+                        Yuklanmoqda...
+                    </div>
+
+                    <!-- Disabled → enroll -->
+                    <div id="tfaEnrollBlock" class="mt-4 hidden">
+                        <button id="tfaEnrollStartBtn" class="btn-brutal">+ 2FA yoqish</button>
+
+                        <div id="tfaEnrollForm" class="hidden mt-5 grid grid-cols-1 md:grid-cols-2 gap-5 items-start">
+                            <div class="brutal p-4 flex flex-col items-center gap-3">
+                                <div class="text-[10px] mono uppercase tracking-widest opacity-60">QR (Authenticator)</div>
+                                <div id="tfaQrBox" class="brutal p-3 bg-white" style="width:208px;height:208px;display:flex;align-items:center;justify-content:center;">
+                                    <span class="mono text-xs opacity-50">QR...</span>
+                                </div>
+                                <div class="text-[10px] mono uppercase tracking-widest opacity-60">Yoki secret kodni qo'lda kiriting:</div>
+                                <code id="tfaSecretText" class="brutal px-2 py-1 mono text-xs break-all max-w-full"></code>
+                            </div>
+                            <div>
+                                <div class="text-[10px] mono uppercase tracking-widest opacity-60 mb-2">[1] Skanerdan o'tkazing</div>
+                                <p class="text-sm leading-relaxed mb-4">Google Authenticator, Authy, Aegis, 1Password kabi ilovalarni oching va QR ni skaner qiling. Yoki yuqoridagi secret ni qo'lda kiriting.</p>
+                                <div class="text-[10px] mono uppercase tracking-widest opacity-60 mb-2">[2] Birinchi kodni tasdiqlang</div>
+                                <div class="field">
+                                    <label>6 xonali kod</label>
+                                    <input id="tfaConfirmCode" type="text" inputmode="numeric"
+                                           maxlength="6" placeholder="000000"
+                                           class="brutal p-2 mono text-2xl tracking-widest text-center">
+                                </div>
+                                <div class="mt-4 flex items-center gap-3">
+                                    <button id="tfaConfirmBtn" class="btn-brutal">→ Tasdiqlash va yoqish</button>
+                                    <button id="tfaCancelEnroll" class="btn-ghost">bekor</button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Recovery codes (shown ONCE after confirmation) -->
+                        <div id="tfaRecoveryBlock" class="hidden mt-5 brutal-thick p-5">
+                            <div class="text-[10px] mono uppercase tracking-widest opacity-60">Recovery codes — bir martalik</div>
+                            <h3 class="mono text-lg font-extrabold mt-1">Bu kodlarni yozib oling</h3>
+                            <p class="text-xs mt-2 leading-relaxed">
+                                Authenticator ilovangizga kirish imkoni yo'qolsa, har bir kod bir marta
+                                hisobga kirish uchun ishlatiladi. Sahifa yopilgach, ular qayta ko'rsatilmaydi.
+                            </p>
+                            <div id="tfaRecoveryGrid" class="mt-4 grid grid-cols-2 md:grid-cols-4 gap-2 mono text-sm"></div>
+                            <div class="mt-4 flex items-center gap-3">
+                                <button id="tfaRecoveryCopyBtn" class="btn-ghost">⎘ nusxa olish</button>
+                                <button id="tfaRecoveryDoneBtn" class="btn-brutal">Yozib oldim, davom etish</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Enabled → manage -->
+                    <div id="tfaManageBlock" class="mt-4 hidden grid grid-cols-1 md:grid-cols-2 gap-5">
+                        <div class="brutal p-5">
+                            <div class="text-[10px] mono uppercase tracking-widest opacity-60">Recovery kodlarni yangilash</div>
+                            <p class="text-xs mt-2 leading-relaxed">
+                                Eski recovery kodlar bekor qilinadi. Joriy authenticator kodingizni kiriting.
+                            </p>
+                            <div class="field mt-3">
+                                <label>Joriy kod</label>
+                                <input id="tfaRegenCode" type="text" inputmode="numeric" maxlength="6"
+                                       placeholder="000000"
+                                       class="brutal p-2 mono text-lg tracking-widest text-center">
+                            </div>
+                            <button id="tfaRegenBtn" class="btn-brutal mt-3 w-full">↻ Yangilash</button>
+                        </div>
+                        <div class="brutal p-5">
+                            <div class="text-[10px] mono uppercase tracking-widest opacity-60">2FA ni o'chirish</div>
+                            <p class="text-xs mt-2 leading-relaxed">
+                                <strong>Diqqat:</strong> 2FA o'chirilsa, hisobingiz xavfsizligi pasayadi.
+                                Joriy kodni kiriting.
+                            </p>
+                            <div class="field mt-3">
+                                <label>Joriy kod</label>
+                                <input id="tfaDisableCode" type="text" inputmode="numeric" maxlength="9"
+                                       placeholder="000000  yoki recovery"
+                                       class="brutal p-2 mono text-lg tracking-widest text-center">
+                            </div>
+                            <button id="tfaDisableBtn" class="btn-danger mt-3 w-full">✗ O'chirish</button>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+    </main>
+
+</div>
+
+<!-- ============ REJECT MODAL ============ -->
+<div id="rejectModal" class="modal-bg">
+    <div class="brutal-thick bg-white max-w-md w-full">
+        <div class="brutal border-l-0 border-r-0 border-t-0 p-4 flex items-center justify-between">
+            <h3 class="mono text-xl font-extrabold">[ TO'LOVNI RAD ETISH ]</h3>
+            <button class="btn-ghost" onclick="closeReject()">[X]</button>
+        </div>
+        <div class="p-5 space-y-3">
+            <div class="text-sm">To'lov #<span id="rejectId">—</span> rad etiladi.</div>
+            <div class="field">
+                <label>Sabab (foydalanuvchiga ko'rinadi)</label>
+                <textarea id="rejectNote" rows="3" placeholder="masalan: chek noto'g'ri, summa mos kelmaydi..."></textarea>
+            </div>
+            <div class="flex items-center gap-3 pt-2">
+                <button id="confirmRejectBtn" class="btn-danger">→ Rad etish</button>
+                <button class="btn-ghost" onclick="closeReject()">bekor qilish</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ============ SCREENSHOT VIEWER ============ -->
+<div id="shotModal" class="modal-bg">
+    <div class="brutal-thick bg-white max-w-3xl w-full">
+        <div class="brutal border-l-0 border-r-0 border-t-0 p-4 flex items-center justify-between">
+            <h3 class="mono text-xl font-extrabold">[ CHEK RASMI ]</h3>
+            <button class="btn-ghost" onclick="closeShot()">[X]</button>
+        </div>
+        <div class="p-5 flex items-center justify-center" style="max-height:80vh; overflow:auto;">
+            <img id="shotImg" alt="screenshot" class="max-w-full">
+        </div>
+    </div>
+</div>
+
+<!-- ============ TOAST ============ -->
+<div id="toast" class="toast"></div>
+
+<script>
+'use strict';
+
+let CSRF = <?= json_encode($csrf, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_UNESCAPED_UNICODE) ?>;
+
+/* ===================================================================
+   TOASTS
+   =================================================================== */
+function toast(msg, kind = 'ok') {
+    const el = document.getElementById('toast');
+    el.textContent = msg;
+    el.classList.toggle('error', kind === 'error');
+    el.classList.add('show');
+    clearTimeout(toast._t);
+    toast._t = setTimeout(() => el.classList.remove('show'), 2500);
+}
+
+/* ===================================================================
+   API HELPER (rolling CSRF)
+   =================================================================== */
+async function api(path, opts = {}) {
+    const headers = Object.assign({
+        'X-Requested-With': 'XMLHttpRequest',
+        'X-CSRF-Token': CSRF,
+    }, opts.headers || {});
+    if (opts.body && typeof opts.body !== 'string' && !(opts.body instanceof FormData)) {
+        headers['Content-Type'] = 'application/json';
+        opts.body = JSON.stringify(opts.body);
+    }
+    const res = await fetch(path, Object.assign({}, opts, { headers }));
+    const fresh = res.headers.get('X-CSRF-Token');
+    if (fresh) CSRF = fresh;
+    let data;
+    try { data = await res.json(); } catch { data = {}; }
+    if (!res.ok) throw new Error(data.error || ('HTTP ' + res.status));
+    return data;
+}
+
+/* ===================================================================
+   NAVIGATION
+   =================================================================== */
+function activatePane(name) {
+    document.querySelectorAll('.pane').forEach(p => p.classList.toggle('is-active', p.dataset.pane === name));
+    document.querySelectorAll('.nav-item').forEach(n => n.classList.toggle('is-active', n.dataset.pane === name));
+    if (name === 'dashboard') loadDashboard();
+    if (name === 'payments')  loadPayments(currentPaymentStatus);
+    if (name === 'tariffs')   loadTariffs();
+    if (name === 'exams')     loadExams();
+    if (name === 'settings')  loadSettings();
+}
+document.querySelectorAll('.nav-item').forEach(n => {
+    n.addEventListener('click', () => activatePane(n.dataset.pane));
+});
+document.querySelectorAll('[data-jump]').forEach(b => {
+    b.addEventListener('click', () => activatePane(b.dataset.jump));
+});
+
+/* ===================================================================
+   DASHBOARD
+   =================================================================== */
+async function loadDashboard() {
+    try {
+        const d = await api('/api/admin/dashboard');
+        document.getElementById('kpiPending').textContent = d.pending_payments;
+        document.getElementById('kpiUsers').textContent   = d.total_users;
+        document.getElementById('kpiExams').textContent   = d.active_exams;
+        document.getElementById('kpiRevenue').textContent = formatNum(d.today_revenue);
+        document.getElementById('navPaymentsBadge').textContent = d.pending_payments;
+        document.getElementById('lastRefreshDash').textContent = '↻ ' + new Date().toLocaleTimeString('uz-UZ');
+    } catch (e) { toast(e.message, 'error'); }
+
+    // Maintenance stats — fetched in parallel; failures are silent.
+    try {
+        const m = await api('/api/admin/maintenance');
+        const s = m.stats || {};
+        document.getElementById('mtRlTotal').textContent    = formatNum(s.rate_limits_total);
+        document.getElementById('mtRlExpired').textContent  = formatNum(s.rate_limits_expired);
+        document.getElementById('mtTgTotal').textContent    = formatNum(s.tg_sessions_total);
+        document.getElementById('mtTgIdle').textContent     = formatNum(s.tg_sessions_idle_old);
+        document.getElementById('mtStuckExams').textContent = formatNum(s.stale_exam_sessions);
+
+        // Queue cells
+        document.getElementById('mtQuPending').textContent    = formatNum(s.queue_pending);
+        document.getElementById('mtQuProcessing').textContent = formatNum(s.queue_processing);
+        document.getElementById('mtQuFailed').textContent     = formatNum(s.queue_failed);
+        document.getElementById('mtQuSent24').textContent     = formatNum(s.queue_sent_24h);
+
+        // Worker freshness check: oldest_pending older than 5 min → "stalled"
+        const oldest = s.queue_oldest_pending; // string or null
+        const wsEl = document.getElementById('mtWorkerStatus');
+        if (!oldest) {
+            wsEl.textContent = '● bo\'sh navbat';
+            wsEl.style.opacity = .6;
+        } else {
+            const ageSec = (Date.now() - new Date(oldest.replace(' ', 'T')).getTime()) / 1000;
+            if (ageSec > 300) {
+                wsEl.innerHTML = '● <span style="background:#000;color:#fff;padding:0 4px;">WORKER TO\'XTAGAN</span>';
+            } else {
+                wsEl.textContent = '● faol (' + Math.round(ageSec) + 's)';
+                wsEl.style.opacity = 1;
+            }
+        }
+    } catch { /* best-effort */ }
+}
+
+document.getElementById('runGcBtn').addEventListener('click', async () => {
+    if (!confirm('Servis tozalashni ishga tushirish?\n• Rate-limit muddati o\'tganlar\n• TG idle sessiyalar (7+ kun)\n• Tikilib qolgan imtihonlar (24h+)')) return;
+    const btn = document.getElementById('runGcBtn');
+    btn.disabled = true; btn.textContent = '...';
+    try {
+        const r = await api('/api/admin/maintenance/gc', { method:'POST', body: {} });
+        const c = r.cleaned || {};
+        toast(`GC OK: rl=${c.rate_limits_deleted}, tg=${c.tg_sessions_deleted}, exam=${c.exam_sessions_expired}`);
+        loadDashboard();
+    } catch (e) {
+        toast(e.message, 'error');
+    } finally {
+        btn.disabled = false; btn.textContent = '↻ GC ishga tushir';
+    }
+});
+
+/* ===================================================================
+   PAYMENTS
+   =================================================================== */
+let currentPaymentStatus = 'pending';
+document.querySelectorAll('[data-status]').forEach(b => {
+    b.addEventListener('click', () => {
+        currentPaymentStatus = b.dataset.status;
+        document.querySelectorAll('[data-status]').forEach(x => x.classList.toggle('is-active-tab', x === b));
+        document.querySelectorAll('[data-status]').forEach(x =>
+            x.style.background = (x === b ? '#000' : '#fff'));
+        document.querySelectorAll('[data-status]').forEach(x =>
+            x.style.color      = (x === b ? '#fff' : '#000'));
+        loadPayments(currentPaymentStatus);
+    });
+});
+// initial styling of pending tab
+window.addEventListener('DOMContentLoaded', () => {
+    const initial = document.querySelector('[data-status="pending"]');
+    if (initial) { initial.style.background = '#000'; initial.style.color = '#fff'; }
+});
+
+async function loadPayments(status) {
+    const body = document.getElementById('paymentsBody');
+    body.innerHTML = '<div class="row p-6 text-center mono text-sm opacity-60">Yuklanmoqda...</div>';
+    try {
+        const d = await api('/api/admin/payments?status=' + encodeURIComponent(status));
+        renderPayments(d.items, status);
+    } catch (e) {
+        body.innerHTML = `<div class="row p-6 text-center mono text-sm">Xato: ${escapeHtml(e.message)}</div>`;
+    }
+}
+
+function renderPayments(items, status) {
+    const body = document.getElementById('paymentsBody');
+    if (!items || items.length === 0) {
+        body.innerHTML = '<div class="row p-6 text-center mono text-sm opacity-60">— bo\'sh —</div>';
+        return;
+    }
+    body.innerHTML = '';
+    for (const p of items) {
+        const row = document.createElement('div');
+        row.className = 'grid grid-cols-12 row hover-fill text-sm';
+        const actions = status === 'pending'
+            ? `<button class="btn-brutal" data-act="approve" data-id="${p.id}">✓ Tasdiqlash</button>
+               <button class="btn-danger" data-act="reject"  data-id="${p.id}">✗ Rad etish</button>`
+            : `<span class="mono text-[10px] uppercase tracking-widest opacity-60">${escapeHtml(p.note || '—')}</span>`;
+        row.innerHTML = `
+            <div class="cell p-3 col-span-1 mono">#${p.id}</div>
+            <div class="cell p-3 col-span-3">
+                <div class="font-bold">${escapeHtml(p.fullname || '—')}</div>
+                <div class="mono text-xs opacity-60">${escapeHtml(p.phone || '')}${p.tg_user_id ? ' &middot; tg:' + p.tg_user_id : ''}</div>
+            </div>
+            <div class="cell p-3 col-span-2 mono text-xs">
+                ${escapeHtml(p.tariff_name || '—')}
+                <div class="opacity-60">${p.mock_count} mock</div>
+            </div>
+            <div class="cell p-3 col-span-1 mono text-right font-bold">${formatNum(p.amount)}</div>
+            <div class="cell p-3 col-span-1 text-center">
+                <button class="btn-ghost" data-act="view" data-shot="${escapeAttr(p.screenshot_path)}">Ko'rish</button>
+            </div>
+            <div class="cell p-3 col-span-2 text-center mono text-xs">${escapeHtml((p.created_at || '').replace('T', ' '))}</div>
+            <div class="p-3 col-span-2 flex items-center justify-center gap-2">${actions}</div>
+        `;
+        body.appendChild(row);
+    }
+}
+
+document.getElementById('paymentsBody').addEventListener('click', async (e) => {
+    const btn = e.target.closest('button[data-act]');
+    if (!btn) return;
+    const act = btn.dataset.act;
+    if (act === 'view') {
+        document.getElementById('shotImg').src = btn.dataset.shot;
+        document.getElementById('shotModal').classList.add('show');
+        return;
+    }
+    if (act === 'approve') {
+        if (!confirm(`To'lov #${btn.dataset.id} tasdiqlansinmi? Foydalanuvchining mock kvota va balansi yangilanadi va botga xabar ketadi.`)) return;
+        btn.disabled = true; btn.textContent = '...';
+        try {
+            await api(`/api/admin/payments/${btn.dataset.id}/approve`, { method: 'POST', body: {} });
+            toast('Tasdiqlandi · TG xabar yuborildi');
+            loadPayments(currentPaymentStatus);
+            loadDashboard();
+        } catch (err) { toast(err.message, 'error'); btn.disabled = false; btn.textContent = '✓ Tasdiqlash'; }
+        return;
+    }
+    if (act === 'reject') {
+        document.getElementById('rejectId').textContent = btn.dataset.id;
+        document.getElementById('rejectModal').dataset.id = btn.dataset.id;
+        document.getElementById('rejectNote').value = '';
+        document.getElementById('rejectModal').classList.add('show');
+    }
+});
+
+document.getElementById('confirmRejectBtn').addEventListener('click', async () => {
+    const id = document.getElementById('rejectModal').dataset.id;
+    const note = document.getElementById('rejectNote').value.trim();
+    try {
+        await api(`/api/admin/payments/${id}/reject`, { method: 'POST', body: { note } });
+        toast('Rad etildi · foydalanuvchiga xabar yuborildi');
+        closeReject();
+        loadPayments(currentPaymentStatus);
+        loadDashboard();
+    } catch (e) { toast(e.message, 'error'); }
+});
+function closeReject() { document.getElementById('rejectModal').classList.remove('show'); }
+function closeShot()   { document.getElementById('shotModal').classList.remove('show'); }
+document.getElementById('rejectModal').addEventListener('click', (e) => { if (e.target.id === 'rejectModal') closeReject(); });
+document.getElementById('shotModal').addEventListener('click',   (e) => { if (e.target.id === 'shotModal')   closeShot();   });
+
+/* ===================================================================
+   TARIFFS
+   =================================================================== */
+async function loadTariffs() {
+    const body = document.getElementById('tariffsBody');
+    body.innerHTML = '<div class="row p-6 text-center mono text-sm opacity-60">Yuklanmoqda...</div>';
+    try {
+        const d = await api('/api/admin/tariffs');
+        if (!d.items || d.items.length === 0) {
+            body.innerHTML = '<div class="row p-6 text-center mono text-sm opacity-60">— tariflar yo\'q —</div>';
+            return;
+        }
+        body.innerHTML = '';
+        for (const t of d.items) {
+            const row = document.createElement('div');
+            row.className = 'grid grid-cols-12 row hover-fill text-sm';
+            row.innerHTML = `
+                <div class="cell p-3 col-span-1 mono">#${t.id}</div>
+                <div class="cell p-3 col-span-3 font-bold">${escapeHtml(t.name)}</div>
+                <div class="cell p-3 col-span-2 mono text-right font-bold">${formatNum(t.price)}</div>
+                <div class="cell p-3 col-span-1 mono text-center">${t.mock_count}</div>
+                <div class="cell p-3 col-span-2 text-center">
+                    ${Number(t.is_active) ? '<span class="brutal px-2 py-0.5 mono text-[10px] uppercase">faol</span>'
+                                          : '<span class="mono text-[10px] uppercase opacity-50">arxiv</span>'}
+                </div>
+                <div class="cell p-3 col-span-1 mono text-center">${t.sort_order}</div>
+                <div class="p-3 col-span-2 flex items-center justify-center gap-2">
+                    <button class="btn-ghost" data-act="edit"   data-id="${t.id}">tahrir</button>
+                    <button class="btn-danger" data-act="delete" data-id="${t.id}">o'chir</button>
+                </div>
+            `;
+            body.appendChild(row);
+        }
+    } catch (e) {
+        body.innerHTML = `<div class="row p-6 text-center mono text-sm">Xato: ${escapeHtml(e.message)}</div>`;
+    }
+}
+
+let tariffsCache = [];
+async function refreshTariffsCache() {
+    const d = await api('/api/admin/tariffs');
+    tariffsCache = d.items || [];
+    return tariffsCache;
+}
+
+document.getElementById('tariffsBody').addEventListener('click', async (e) => {
+    const btn = e.target.closest('button[data-act]');
+    if (!btn) return;
+    const id = parseInt(btn.dataset.id, 10);
+    if (btn.dataset.act === 'delete') {
+        if (!confirm(`Tarif #${id} arxivga o'tkazilsinmi? (Eski to'lovlarga ta'sir qilmaydi.)`)) return;
+        try {
+            await api(`/api/admin/tariffs/${id}/delete`, { method: 'POST', body: {} });
+            toast('Tarif arxivga o\'tkazildi');
+            loadTariffs();
+        } catch (err) { toast(err.message, 'error'); }
+        return;
+    }
+    if (btn.dataset.act === 'edit') {
+        await refreshTariffsCache();
+        const t = tariffsCache.find(x => Number(x.id) === id);
+        if (!t) return toast('Tarif topilmadi', 'error');
+        openTariffEditor(t);
+    }
+});
+
+document.getElementById('addTariffBtn').addEventListener('click', () => openTariffEditor(null));
+document.getElementById('closeTariffEditor').addEventListener('click', closeTariffEditor);
+document.getElementById('closeTariffEditor2').addEventListener('click', closeTariffEditor);
+function openTariffEditor(t) {
+    const editor = document.getElementById('tariffEditor');
+    editor.classList.remove('hidden');
+    document.getElementById('tariffEditorTitle').textContent = t ? `[ TARIF #${t.id} ]` : '[ YANGI TARIF ]';
+    document.getElementById('tfId').value          = t ? t.id : 0;
+    document.getElementById('tfName').value        = t ? t.name : '';
+    document.getElementById('tfPrice').value       = t ? t.price : '';
+    document.getElementById('tfMockCount').value   = t ? t.mock_count : 1;
+    document.getElementById('tfDescription').value = t ? (t.description || '') : '';
+    document.getElementById('tfSortOrder').value   = t ? t.sort_order : 0;
+    document.getElementById('tfIsActive').checked  = t ? !!Number(t.is_active) : true;
+    editor.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+function closeTariffEditor() { document.getElementById('tariffEditor').classList.add('hidden'); }
+
+document.getElementById('saveTariffBtn').addEventListener('click', async () => {
+    const payload = {
+        id:          parseInt(document.getElementById('tfId').value, 10) || 0,
+        name:        document.getElementById('tfName').value.trim(),
+        price:       parseFloat(document.getElementById('tfPrice').value) || 0,
+        mock_count:  parseInt(document.getElementById('tfMockCount').value, 10) || 0,
+        description: document.getElementById('tfDescription').value.trim(),
+        sort_order:  parseInt(document.getElementById('tfSortOrder').value, 10) || 0,
+        is_active:   document.getElementById('tfIsActive').checked ? 1 : 0,
+    };
+    if (!payload.name || payload.price < 0) return toast('Maydonlar to\'liq emas', 'error');
+    try {
+        await api('/api/admin/tariffs', { method: 'POST', body: payload });
+        toast('Saqlandi');
+        closeTariffEditor();
+        loadTariffs();
+    } catch (e) { toast(e.message, 'error'); }
+});
+
+/* ===================================================================
+   EXAMS + QUESTIONS  (CRUD)
+   =================================================================== */
+
+let examsCache  = [];
+let currentExam = null;     // {id, title, ...} when viewing questions
+
+async function loadExams() {
+    // Reset to list view in case we were editing
+    document.getElementById('examsListView').classList.remove('hidden');
+    document.getElementById('questionsView').classList.add('hidden');
+    closeExamEditor();
+    closeQuestionEditor();
+
+    const body = document.getElementById('examsBody');
+    body.innerHTML = '<div class="row p-6 text-center mono text-sm opacity-60">Yuklanmoqda...</div>';
+    try {
+        const d = await api('/api/admin/exams');
+        examsCache = d.items || [];
+        if (examsCache.length === 0) {
+            body.innerHTML = '<div class="row p-6 text-center mono text-sm opacity-60">— imtihonlar yo\'q —</div>';
+            return;
+        }
+        body.innerHTML = '';
+        for (const e of examsCache) {
+            const row = document.createElement('div');
+            row.className = 'grid grid-cols-12 row hover-fill text-sm';
+            const statusBadge = e.status === 'published'
+                ? '<span class="brutal px-2 py-0.5 mono text-[10px] uppercase">nashr</span>'
+                : e.status === 'archived'
+                    ? '<span class="mono text-[10px] uppercase opacity-50">arxiv</span>'
+                    : '<span class="brutal px-2 py-0.5 mono text-[10px] uppercase opacity-60">draft</span>';
+            row.innerHTML = `
+                <div class="cell p-3 col-span-1 mono">#${e.id}</div>
+                <div class="cell p-3 col-span-3 font-bold">${escapeHtml(e.title)}</div>
+                <div class="cell p-3 col-span-1 text-center mono text-xs">${escapeHtml(e.subject || '—')}</div>
+                <div class="cell p-3 col-span-1 text-center mono">${e.duration} min</div>
+                <div class="cell p-3 col-span-1 text-center mono font-bold">${e.questions_count}/${e.total_qty}</div>
+                <div class="cell p-3 col-span-1 text-center mono">${e.submissions_count}</div>
+                <div class="cell p-3 col-span-2 text-center">${statusBadge}</div>
+                <div class="p-3 col-span-2 flex items-center justify-center gap-1.5 flex-wrap">
+                    <button class="btn-ghost"  data-act="questions" data-id="${e.id}">savollar</button>
+                    <button class="btn-ghost"  data-act="edit"      data-id="${e.id}">tahrir</button>
+                    <button class="btn-danger" data-act="delete"    data-id="${e.id}">arxiv</button>
+                </div>
+            `;
+            body.appendChild(row);
+        }
+    } catch (err) {
+        body.innerHTML = `<div class="row p-6 text-center mono text-sm">Xato: ${escapeHtml(err.message)}</div>`;
+    }
+}
+
+document.getElementById('examsBody').addEventListener('click', async (e) => {
+    const btn = e.target.closest('button[data-act]');
+    if (!btn) return;
+    const id = parseInt(btn.dataset.id, 10);
+    const exam = examsCache.find(x => Number(x.id) === id);
+
+    if (btn.dataset.act === 'edit')      return openExamEditor(exam);
+    if (btn.dataset.act === 'questions') return enterQuestionsView(exam);
+    if (btn.dataset.act === 'delete') {
+        if (!confirm(`Imtihon #${id} arxivga o'tkazilsinmi?`)) return;
+        try {
+            await api(`/api/admin/exams/${id}/delete`, { method: 'POST', body: {} });
+            toast('Imtihon arxivga o\'tkazildi');
+            loadExams();
+        } catch (err) { toast(err.message, 'error'); }
+    }
+});
+
+document.getElementById('addExamBtn').addEventListener('click', () => openExamEditor(null));
+
+function openExamEditor(e) {
+    const ed = document.getElementById('examEditor');
+    ed.classList.remove('hidden');
+    document.getElementById('examEditorTitle').textContent = e ? `[ IMTIHON #${e.id} ]` : '[ YANGI IMTIHON ]';
+    document.getElementById('exId').value        = e ? e.id : 0;
+    document.getElementById('exTitle').value     = e ? e.title : '';
+    document.getElementById('exSubject').value   = e ? (e.subject || 'Fizika') : 'Fizika';
+    document.getElementById('exDuration').value  = e ? e.duration  : 120;
+    document.getElementById('exTotalQty').value  = e ? e.total_qty : 30;
+    document.getElementById('exStatus').value    = e ? e.status    : 'draft';
+    ed.scrollIntoView({ behavior:'smooth', block:'start' });
+}
+function closeExamEditor() { document.getElementById('examEditor').classList.add('hidden'); }
+
+document.getElementById('saveExamBtn').addEventListener('click', async () => {
+    const payload = {
+        id:        parseInt(document.getElementById('exId').value, 10) || 0,
+        title:     document.getElementById('exTitle').value.trim(),
+        subject:   document.getElementById('exSubject').value.trim(),
+        duration:  parseInt(document.getElementById('exDuration').value, 10) || 0,
+        total_qty: parseInt(document.getElementById('exTotalQty').value, 10) || 0,
+        status:    document.getElementById('exStatus').value,
+    };
+    if (!payload.title || payload.duration < 1 || payload.total_qty < 1) {
+        return toast('Maydonlar to\'liq emas', 'error');
+    }
+    try {
+        await api('/api/admin/exams', { method: 'POST', body: payload });
+        toast('Imtihon saqlandi');
+        closeExamEditor();
+        loadExams();
+    } catch (err) { toast(err.message, 'error'); }
+});
+
+/* ----------------- QUESTIONS subview ----------------- */
+
+function enterQuestionsView(exam) {
+    if (!exam) return;
+    currentExam = exam;
+    document.getElementById('examsListView').classList.add('hidden');
+    document.getElementById('questionsView').classList.remove('hidden');
+    document.getElementById('qExamTitle').textContent = exam.title;
+    document.getElementById('qExamId').value = exam.id;
+    closeQuestionEditor();
+    loadQuestions(exam.id);
+}
+document.getElementById('backToExams').addEventListener('click', () => {
+    currentExam = null;
+    document.getElementById('examsListView').classList.remove('hidden');
+    document.getElementById('questionsView').classList.add('hidden');
+    loadExams();
+});
+
+async function loadQuestions(examId) {
+    const list = document.getElementById('questionsList');
+    list.innerHTML = '<div class="brutal p-6 text-center mono text-sm opacity-60">Yuklanmoqda...</div>';
+    try {
+        const d = await api(`/api/admin/exams/${examId}/questions`);
+        if (!d.items || d.items.length === 0) {
+            list.innerHTML = '<div class="brutal p-6 text-center mono text-sm opacity-60">— savollar yo\'q —</div>';
+            return;
+        }
+        list.innerHTML = '';
+        d.items.forEach((q, idx) => {
+            const card = document.createElement('div');
+            card.className = 'brutal p-4 hover-fill';
+            const typeBadge = {
+                mcq: 'MCQ', open: 'OPEN', matching: 'MATCH'
+            }[q.type] || q.type;
+            const stars = '★'.repeat(q.difficulty) + '☆'.repeat(5 - q.difficulty);
+            card.innerHTML = `
+                <div class="flex items-start justify-between gap-3">
+                    <div class="flex-1 min-w-0">
+                        <div class="flex items-center gap-2 flex-wrap mb-2">
+                            <span class="mono text-[10px] uppercase tracking-widest">[${idx+1}] #${q.id}</span>
+                            <span class="brutal px-2 py-0.5 mono text-[10px] uppercase">${typeBadge}</span>
+                            <span class="brutal px-2 py-0.5 mono text-[10px] uppercase">${escapeHtml(q.section)}</span>
+                            <span class="mono text-[10px] tracking-widest">${stars}</span>
+                            <span class="mono text-[10px] uppercase opacity-60">vazn: ${q.weight}</span>
+                        </div>
+                        <div class="text-sm question-preview" data-qid="${q.id}">${truncate(stripTags(q.question_text), 240)}</div>
+                    </div>
+                    <div class="flex items-center gap-2 flex-shrink-0">
+                        <button class="btn-ghost"  data-act="qedit"   data-id="${q.id}">tahrir</button>
+                        <button class="btn-danger" data-act="qdelete" data-id="${q.id}">o'chir</button>
+                    </div>
+                </div>
+            `;
+            list.appendChild(card);
+        });
+        // Render LaTeX in previews
+        if (window.MathJax && window.MathJax.typesetPromise) {
+            window.MathJax.typesetPromise([list]).catch(()=>{});
+        }
+    } catch (err) {
+        list.innerHTML = `<div class="brutal p-6 text-center mono text-sm">Xato: ${escapeHtml(err.message)}</div>`;
+    }
+}
+
+document.getElementById('questionsList').addEventListener('click', async (e) => {
+    const btn = e.target.closest('button[data-act]');
+    if (!btn) return;
+    const id = parseInt(btn.dataset.id, 10);
+    if (btn.dataset.act === 'qdelete') {
+        if (!confirm(`Savol #${id} butunlay o'chirilsinmi? Bu amal qaytarib bo'lmaydi.`)) return;
+        try {
+            await api(`/api/admin/questions/${id}/delete`, { method: 'POST', body: {} });
+            toast('Savol o\'chirildi');
+            loadQuestions(currentExam.id);
+        } catch (err) { toast(err.message, 'error'); }
+        return;
+    }
+    if (btn.dataset.act === 'qedit') {
+        try {
+            const q = await api(`/api/admin/questions/${id}`);
+            openQuestionEditor(q);
+        } catch (err) { toast(err.message, 'error'); }
+    }
+});
+
+document.getElementById('addQuestionBtn').addEventListener('click', () => openQuestionEditor(null));
+
+/* ----------------- QUESTION EDITOR ----------------- */
+
+function openQuestionEditor(q) {
+    const ed = document.getElementById('questionEditor');
+    ed.classList.remove('hidden');
+    document.getElementById('qEditorTitle').textContent = q ? `[ SAVOL #${q.id} ]` : '[ YANGI SAVOL ]';
+    document.getElementById('qId').value         = q ? q.id : 0;
+    document.getElementById('qExamId').value     = q ? q.exam_id : (currentExam ? currentExam.id : 0);
+    document.getElementById('qText').value       = q ? q.question_text : '';
+    document.getElementById('qSection').value    = q ? q.section : 'Umumiy';
+    document.getElementById('qType').value       = q ? q.type : 'mcq';
+    document.getElementById('qDifficulty').value = q ? q.difficulty : 2;
+    document.getElementById('qWeight').value     = q ? q.weight : 1.0;
+    document.getElementById('qSolution').value   = q ? (q.solution_text || '') : '';
+    document.getElementById('qVideoUrl').value   = q ? (q.video_url || '') : '';
+
+    // Render type-specific editor
+    renderQuestionTypeEditor();
+
+    // Pre-fill existing answer data
+    if (q && q.type === 'mcq') {
+        const opts = Array.isArray(q.options) ? q.options : [];
+        const correct = Array.isArray(q.correct_answer) ? q.correct_answer.map(String) : [String(q.correct_answer)];
+        document.getElementById('qMcqOptions').innerHTML = '';
+        opts.forEach(o => addMcqOption(o.key, o.text, correct.includes(String(o.key))));
+    } else if (q && q.type === 'open') {
+        document.getElementById('qOpenAnswer').value = q.correct_answer || '';
+    } else if (q && q.type === 'matching') {
+        document.getElementById('qMatchLeft').value  = (q.options?.left  || []).join('\n');
+        document.getElementById('qMatchRight').value = (q.options?.right || []).join('\n');
+        buildMatchingPairs(q.correct_answer || {});
+    } else {
+        // New MCQ: 4 empty rows
+        document.getElementById('qMcqOptions').innerHTML = '';
+        ['A','B','C','D'].forEach(k => addMcqOption(k, '', false));
+    }
+
+    refreshPreview();
+    ed.scrollIntoView({ behavior:'smooth', block:'start' });
+}
+function closeQuestionEditor() { document.getElementById('questionEditor').classList.add('hidden'); }
+
+document.getElementById('qType').addEventListener('change', renderQuestionTypeEditor);
+function renderQuestionTypeEditor() {
+    const t = document.getElementById('qType').value;
+    document.getElementById('qMcqEditor').classList.toggle('hidden',      t !== 'mcq');
+    document.getElementById('qOpenEditor').classList.toggle('hidden',     t !== 'open');
+    document.getElementById('qMatchingEditor').classList.toggle('hidden', t !== 'matching');
+    if (t === 'mcq' && document.getElementById('qMcqOptions').children.length === 0) {
+        ['A','B','C','D'].forEach(k => addMcqOption(k, '', false));
+    }
+}
+
+function addMcqOption(key = '', text = '', correct = false) {
+    const wrap = document.getElementById('qMcqOptions');
+    const row = document.createElement('div');
+    row.className = 'flex items-center gap-2 brutal p-2';
+    row.innerHTML = `
+        <label class="flex items-center gap-1 brutal px-2 py-1.5 hover-fill cursor-pointer">
+            <input type="checkbox" class="qMcqCorrect" ${correct ? 'checked' : ''}>
+            <span class="mono text-[10px] uppercase tracking-widest">to'g'ri</span>
+        </label>
+        <input class="qMcqKey  brutal px-2 py-1.5 mono text-sm" style="width:60px;" placeholder="key" value="${escapeAttr(key)}">
+        <input class="qMcqText brutal px-2 py-1.5 flex-1"        placeholder="variant matni" value="${escapeAttr(text)}">
+        <button class="btn-ghost qMcqDel">×</button>
+    `;
+    row.querySelector('.qMcqDel').addEventListener('click', () => row.remove());
+    wrap.appendChild(row);
+}
+document.getElementById('qAddMcqOpt').addEventListener('click', () => addMcqOption('', '', false));
+
+document.getElementById('qBuildPairs').addEventListener('click', () => {
+    buildMatchingPairs({});
+});
+function buildMatchingPairs(existing) {
+    const left  = document.getElementById('qMatchLeft').value.split('\n').map(s=>s.trim()).filter(Boolean);
+    const right = document.getElementById('qMatchRight').value.split('\n').map(s=>s.trim()).filter(Boolean);
+    const wrap = document.getElementById('qMatchPairs');
+    wrap.innerHTML = '';
+    left.forEach(L => {
+        const row = document.createElement('div');
+        row.className = 'flex items-center gap-2';
+        row.innerHTML = `
+            <span class="brutal px-3 py-1.5 flex-1 mono">${escapeHtml(L)}</span>
+            <span class="mono">→</span>
+            <select class="brutal p-1.5 flex-1 qMatchSel" data-left="${escapeAttr(L)}">
+                <option value="">— moslashuvni tanlang —</option>
+                ${right.map(R => `<option value="${escapeAttr(R)}" ${existing[L] === R ? 'selected' : ''}>${escapeHtml(R)}</option>`).join('')}
+            </select>
+        `;
+        wrap.appendChild(row);
+    });
+}
+
+// LaTeX preview
+let _previewT;
+document.getElementById('qText').addEventListener('input', refreshPreview);
+function refreshPreview() {
+    clearTimeout(_previewT);
+    _previewT = setTimeout(() => {
+        const el = document.getElementById('qPreview');
+        el.innerHTML = document.getElementById('qText').value;
+        if (window.MathJax && window.MathJax.typesetPromise) {
+            window.MathJax.typesetPromise([el]).catch(()=>{});
+        }
+    }, 250);
+}
+
+document.getElementById('saveQuestionBtn').addEventListener('click', async () => {
+    const examId = parseInt(document.getElementById('qExamId').value, 10) || 0;
+    const id     = parseInt(document.getElementById('qId').value, 10) || 0;
+    const type   = document.getElementById('qType').value;
+
+    const payload = {
+        id,
+        exam_id:        examId,
+        section:        document.getElementById('qSection').value.trim() || 'Umumiy',
+        type,
+        difficulty:     parseInt(document.getElementById('qDifficulty').value, 10) || 1,
+        weight:         parseFloat(document.getElementById('qWeight').value) || 1.0,
+        question_text:  document.getElementById('qText').value.trim(),
+        solution_text:  document.getElementById('qSolution').value.trim(),
+        video_url:      document.getElementById('qVideoUrl').value.trim(),
+        options:        null,
+        correct_answer: null,
+    };
+
+    if (type === 'mcq') {
+        const rows = document.querySelectorAll('#qMcqOptions > div');
+        const opts = [];
+        const correct = [];
+        rows.forEach(r => {
+            const key  = r.querySelector('.qMcqKey').value.trim();
+            const text = r.querySelector('.qMcqText').value.trim();
+            const isC  = r.querySelector('.qMcqCorrect').checked;
+            if (key && text) {
+                opts.push({ key, text });
+                if (isC) correct.push(key);
+            }
+        });
+        if (opts.length < 2) return toast('Kamida 2 ta variant kerak', 'error');
+        if (correct.length === 0) return toast('Kamida 1 ta to\'g\'ri javob belgilang', 'error');
+        payload.options = opts;
+        payload.correct_answer = correct.length === 1 ? correct[0] : correct;
+    } else if (type === 'open') {
+        const ans = document.getElementById('qOpenAnswer').value.trim();
+        if (!ans) return toast('To\'g\'ri javobni kiriting', 'error');
+        payload.correct_answer = ans;
+    } else if (type === 'matching') {
+        const left  = document.getElementById('qMatchLeft').value.split('\n').map(s=>s.trim()).filter(Boolean);
+        const right = document.getElementById('qMatchRight').value.split('\n').map(s=>s.trim()).filter(Boolean);
+        if (left.length === 0 || right.length === 0) return toast('Chap va o\'ng ustun bo\'sh', 'error');
+        payload.options = { left, right };
+        const mapping = {};
+        document.querySelectorAll('#qMatchPairs .qMatchSel').forEach(sel => {
+            const L = sel.dataset.left;
+            const R = sel.value;
+            if (L && R) mapping[L] = R;
+        });
+        if (Object.keys(mapping).length !== left.length) {
+            return toast('Hammasi uchun moslashuvni tanlang', 'error');
+        }
+        payload.correct_answer = mapping;
+    }
+
+    try {
+        await api('/api/admin/questions', { method: 'POST', body: payload });
+        toast('Savol saqlandi');
+        closeQuestionEditor();
+        loadQuestions(currentExam.id);
+    } catch (err) { toast(err.message, 'error'); }
+});
+
+/* ===================================================================
+   SETTINGS — cards, logo, slider
+   =================================================================== */
+async function loadSettings() {
+    try {
+        const s = await api('/api/admin/settings');
+        document.getElementById('humoCard').value   = s.humo_card    || '';
+        document.getElementById('visaCard').value   = s.visa_card    || '';
+        document.getElementById('cardHolder').value = s.card_holder  || '';
+        if (s.site_logo) document.getElementById('currentLogo').src = s.site_logo;
+        renderSlider(s.slider_images || []);
+    } catch (e) { toast(e.message, 'error'); }
+
+    // 2FA status
+    try { await loadTfaStatus(); } catch {}
+}
+
+/* ===================================================================
+   2FA / TOTP — admin self-service
+   =================================================================== */
+async function loadTfaStatus() {
+    const r = await api('/api/auth/2fa/status');
+    const box = document.getElementById('tfaStatusBox');
+    if (r.enabled) {
+        box.innerHTML = `
+            ● <strong>Yoqilgan</strong> &middot;
+            recovery codes: <strong>${r.recovery_remaining}</strong> qoldi
+        `;
+        document.getElementById('tfaEnrollBlock').classList.add('hidden');
+        document.getElementById('tfaManageBlock').classList.remove('hidden');
+    } else {
+        box.innerHTML = `<span class="opacity-60">○ O'chiq — hisobingizni qo'shimcha himoya bilan ta'minlang.</span>`;
+        document.getElementById('tfaEnrollBlock').classList.remove('hidden');
+        document.getElementById('tfaManageBlock').classList.add('hidden');
+    }
+    // Hide sub-forms by default
+    document.getElementById('tfaEnrollForm').classList.add('hidden');
+    document.getElementById('tfaRecoveryBlock').classList.add('hidden');
+}
+
+document.getElementById('tfaEnrollStartBtn')?.addEventListener('click', async () => {
+    try {
+        const r = await api('/api/auth/2fa/begin', { method: 'POST', body: {} });
+        document.getElementById('tfaSecretText').textContent = r.secret;
+        renderQr('tfaQrBox', r.uri);
+        document.getElementById('tfaEnrollForm').classList.remove('hidden');
+        document.getElementById('tfaConfirmCode').focus();
+    } catch (e) { toast(e.message, 'error'); }
+});
+
+document.getElementById('tfaCancelEnroll')?.addEventListener('click', () => {
+    document.getElementById('tfaEnrollForm').classList.add('hidden');
+});
+
+document.getElementById('tfaConfirmBtn')?.addEventListener('click', async () => {
+    const code = document.getElementById('tfaConfirmCode').value.trim();
+    if (code.length !== 6) return toast('6 xonali kod kiriting', 'error');
+    try {
+        const r = await api('/api/auth/2fa/confirm', { method:'POST', body:{ code } });
+        toast('2FA yoqildi');
+        renderRecoveryCodes(r.recovery_codes);
+        document.getElementById('tfaEnrollForm').classList.add('hidden');
+    } catch (e) { toast(e.message, 'error'); }
+});
+
+document.getElementById('tfaRecoveryDoneBtn')?.addEventListener('click', async () => {
+    document.getElementById('tfaRecoveryBlock').classList.add('hidden');
+    await loadTfaStatus();
+});
+
+document.getElementById('tfaRecoveryCopyBtn')?.addEventListener('click', () => {
+    const codes = Array.from(document.querySelectorAll('#tfaRecoveryGrid > span'))
+        .map(s => s.textContent).join('\n');
+    navigator.clipboard.writeText(codes).then(() => toast('Nusxa olindi'));
+});
+
+document.getElementById('tfaRegenBtn')?.addEventListener('click', async () => {
+    const code = document.getElementById('tfaRegenCode').value.trim();
+    if (!code) return toast('Kod kiriting', 'error');
+    if (!confirm('Eski recovery kodlar bekor qilinadi. Davom etamizmi?')) return;
+    try {
+        const r = await api('/api/auth/2fa/regenerate', { method:'POST', body:{ code } });
+        renderRecoveryCodes(r.recovery_codes);
+        toast('Yangi recovery kodlar yaratildi');
+        document.getElementById('tfaRegenCode').value = '';
+    } catch (e) { toast(e.message, 'error'); }
+});
+
+document.getElementById('tfaDisableBtn')?.addEventListener('click', async () => {
+    const code = document.getElementById('tfaDisableCode').value.trim();
+    if (!code) return toast('Kod kiriting', 'error');
+    if (!confirm("2FA ni butunlay o'chirish? Hisob xavfsizligi pasayadi.")) return;
+    try {
+        await api('/api/auth/2fa/disable', { method:'POST', body:{ code } });
+        toast("2FA o'chirildi");
+        document.getElementById('tfaDisableCode').value = '';
+        await loadTfaStatus();
+    } catch (e) { toast(e.message, 'error'); }
+});
+
+function renderRecoveryCodes(codes) {
+    const grid = document.getElementById('tfaRecoveryGrid');
+    grid.innerHTML = '';
+    (codes || []).forEach(c => {
+        const s = document.createElement('span');
+        s.className = 'brutal p-2 text-center';
+        s.textContent = c;
+        grid.appendChild(s);
+    });
+    document.getElementById('tfaRecoveryBlock').classList.remove('hidden');
+}
+
+function renderQr(targetId, text) {
+    const target = document.getElementById(targetId);
+    target.innerHTML = '';
+    if (typeof qrcode === 'undefined') {
+        target.textContent = '(QR library yuklanmadi)';
+        return;
+    }
+    // Type-0 = auto, 'M' = medium error correction
+    const qr = qrcode(0, 'M');
+    qr.addData(text);
+    qr.make();
+    target.innerHTML = qr.createSvgTag({ scalable: true, margin: 0 });
+    const svg = target.querySelector('svg');
+    if (svg) {
+        svg.removeAttribute('width');
+        svg.removeAttribute('height');
+        svg.style.width = '100%';
+        svg.style.height = '100%';
+    }
+}
+
+document.getElementById('saveCardsBtn').addEventListener('click', async () => {
+    const payload = {
+        humo_card:   document.getElementById('humoCard').value.trim(),
+        visa_card:   document.getElementById('visaCard').value.trim(),
+        card_holder: document.getElementById('cardHolder').value.trim(),
+    };
+    try {
+        await api('/api/admin/cards', { method: 'POST', body: payload });
+        toast('Kartalar saqlandi');
+    } catch (e) { toast(e.message, 'error'); }
+});
+
+document.getElementById('logoForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const form = e.currentTarget;
+    const fd = new FormData(form);
+    if (!fd.get('logo') || !fd.get('logo').size) return toast('Fayl tanlanmadi', 'error');
+    try {
+        const d = await api('/api/admin/logo', { method: 'POST', body: fd });
+        toast('Logo yangilandi');
+        if (d.path) {
+            document.getElementById('currentLogo').src = d.path + '?t=' + Date.now();
+            document.querySelector('header img').src   = d.path + '?t=' + Date.now();
+        }
+        form.reset();
+    } catch (err) { toast(err.message, 'error'); }
+});
+
+document.getElementById('sliderForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const form = e.currentTarget;
+    const fd = new FormData(form);
+    if (!fd.get('slide') || !fd.get('slide').size) return toast('Fayl tanlanmadi', 'error');
+    try {
+        const d = await api('/api/admin/slider', { method: 'POST', body: fd });
+        toast('Slayd qo\'shildi');
+        renderSlider(d.images || []);
+        form.reset();
+    } catch (err) { toast(err.message, 'error'); }
+});
+
+function renderSlider(images) {
+    const grid = document.getElementById('sliderGrid');
+    if (!images || images.length === 0) {
+        grid.innerHTML = '<div class="brutal p-6 text-center mono text-xs opacity-60 col-span-full">— slayder bo\'sh —</div>';
+        return;
+    }
+    grid.innerHTML = '';
+    for (const path of images) {
+        const card = document.createElement('div');
+        card.className = 'brutal p-2 flex flex-col gap-2';
+        card.innerHTML = `
+            <div class="brutal flex items-center justify-center" style="aspect-ratio:16/9;overflow:hidden;background:#fff;">
+                <img src="${escapeAttr(path)}" alt="" style="max-width:100%;max-height:100%;object-fit:contain;">
+            </div>
+            <div class="flex items-center justify-between">
+                <span class="mono text-[10px] uppercase truncate flex-1" title="${escapeAttr(path)}">${escapeHtml(path.split('/').pop())}</span>
+                <button class="btn-danger" data-del="${escapeAttr(path)}">o'chir</button>
+            </div>
+        `;
+        grid.appendChild(card);
+    }
+}
+
+document.getElementById('sliderGrid').addEventListener('click', async (e) => {
+    const btn = e.target.closest('button[data-del]');
+    if (!btn) return;
+    if (!confirm('Bu slaydni o\'chirib tashlaysizmi?')) return;
+    try {
+        const d = await api('/api/admin/slider/delete', { method: 'POST', body: { path: btn.dataset.del } });
+        toast('O\'chirildi');
+        renderSlider(d.images || []);
+    } catch (err) { toast(err.message, 'error'); }
+});
+
+/* ===================================================================
+   LOGOUT
+   =================================================================== */
+document.getElementById('logoutBtn').addEventListener('click', async () => {
+    try { await api('/api/auth/logout', { method:'POST' }); } catch {}
+    window.location.href = '/auth';
+});
+
+/* ===================================================================
+   UTILS
+   =================================================================== */
+function escapeHtml(s) {
+    return String(s ?? '').replace(/[&<>"']/g, c => ({
+        '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
+    }[c]));
+}
+function escapeAttr(s) { return escapeHtml(s).replace(/`/g, '&#96;'); }
+function formatNum(n)  { return new Intl.NumberFormat('fr-FR').format(Number(n) || 0); }
+function stripTags(s)  { return String(s ?? '').replace(/<[^>]+>/g, ''); }
+function truncate(s, n) {
+    s = String(s ?? '');
+    return s.length > n ? s.slice(0, n) + '…' : s;
+}
+function emptyState(text) {
+    const div = document.createElement('div');
+    div.className = 'mono text-xs uppercase tracking-widest opacity-50';
+    div.textContent = text;
+    return div;
+}
+
+/* ===================================================================
+   BOOT
+   =================================================================== */
+loadDashboard();
+
+// Auto-refresh dashboard every 60s
+setInterval(loadDashboard, 60_000);
+
+// Keyboard shortcuts
+document.addEventListener('keydown', (e) => {
+    if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.tagName === 'SELECT') return;
+    if (e.key === 'Escape') { closeReject(); closeShot(); }
+    if (e.key === '1') activatePane('dashboard');
+    if (e.key === '2') activatePane('payments');
+    if (e.key === '3') activatePane('tariffs');
+    if (e.key === '4') activatePane('exams');
+    if (e.key === '5') activatePane('settings');
+});
+</script>
+
+</body>
+</html>

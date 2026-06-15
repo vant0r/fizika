@@ -1,0 +1,570 @@
+<?php
+use App\Core\Security;
+/** @var string $logo */
+/** @var string $platformName */
+/** @var array<int,string> $sliderImages */
+/** @var array<int,array<string,mixed>> $tariffs */
+/** @var string $botUsername */
+/** @var array<string,mixed> $stats */
+?><!DOCTYPE html>
+<html lang="uz">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title><?= Security::e($platformName) ?> — Fizika fanidan Milliy Sertifikat</title>
+    <meta name="description" content="Fizika fanidan Milliy Sertifikat olishga tayyorlanish platformasi. BMBA metodologiyasi bo'yicha mock imtihonlar, MathJax formulalar, virtual qoralama, Telegram bot orqali to'lov.">
+    <meta name="theme-color" content="#000000">
+    <meta property="og:title" content="<?= Security::eAttr($platformName) ?>">
+    <meta property="og:description" content="Fizika sertifikatiga tayyorlovchi mega-platforma. 50K+ o'quvchi, BMBA scoring, P2P payment.">
+    <meta property="og:type" content="website">
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;800&family=Inter:wght@300;400;500;700;800;900&display=swap" rel="stylesheet">
+    <style>
+        :root { --bd: 1px solid #000; }
+        html, body { background:#fff; color:#000; font-family:'Inter',sans-serif; }
+        .mono { font-family:'JetBrains Mono', monospace; letter-spacing:-.02em; }
+        .brutal { border: var(--bd); }
+        .brutal-thick { border: 2px solid #000; }
+        .hover-fill:hover { background:#f3f3f3; transition: background .12s; }
+        ::selection { background:#000; color:#fff; }
+
+        .btn-brutal {
+            border: 2px solid #000; padding:.85rem 1.5rem;
+            font-weight:800; text-transform:uppercase; letter-spacing:.06em;
+            transition: all .15s; cursor:pointer; display:inline-block;
+        }
+        .btn-brutal:hover  { background:#000; color:#fff; }
+        .btn-brutal:active { transform: translate(2px,2px); }
+        .btn-inverse { border: 2px solid #000; padding:.85rem 1.5rem; font-weight:800; text-transform:uppercase; letter-spacing:.06em; background:#000; color:#fff; transition: all .15s; cursor:pointer; display:inline-block; }
+        .btn-inverse:hover { background:#fff; color:#000; }
+        .btn-ghost { border:1px solid #000; padding:.55rem 1rem; text-transform:uppercase; letter-spacing:.05em; font-size:.7rem; font-family:'JetBrains Mono', monospace; }
+        .btn-ghost:hover { background:#f3f3f3; }
+
+        .ticker { white-space:nowrap; overflow:hidden; }
+        .ticker > div { display:inline-block; padding-left:100%; animation: tk 36s linear infinite; }
+        @keyframes tk { 0%{transform:translateX(0);} 100%{transform:translateX(-100%);} }
+
+        .cell { border-right: var(--bd); }
+        .cell:last-child { border-right:0; }
+        .row-bd { border-top: var(--bd); }
+        .row-bd:first-child { border-top:0; }
+
+        /* slider */
+        .slider {
+            position:relative;
+            width:100%;
+            aspect-ratio:16/9;
+            overflow:hidden;
+            background:#fff;
+        }
+        .slider-track {
+            display:flex;
+            width:100%;
+            height:100%;
+            transition: transform .65s cubic-bezier(.77,0,.18,1);
+            will-change: transform;
+        }
+        .slide {
+            min-width:100%;
+            height:100%;
+            display:flex; align-items:center; justify-content:center;
+            background:#fff;
+        }
+        .slide img {
+            max-width:100%;
+            max-height:100%;
+            object-fit:cover;
+            width:100%;
+            height:100%;
+        }
+        .slider-arrow {
+            position:absolute;
+            top:50%; transform:translateY(-50%);
+            background:#fff;
+            border: var(--bd);
+            width:44px; height:44px;
+            display:flex; align-items:center; justify-content:center;
+            cursor:pointer;
+            font-family:'JetBrains Mono', monospace;
+            font-size:1.4rem;
+            user-select:none;
+        }
+        .slider-arrow:hover { background:#000; color:#fff; }
+        .slider-arrow.prev { left:12px; }
+        .slider-arrow.next { right:12px; }
+        .slider-dots {
+            position:absolute; bottom:12px; left:0; right:0;
+            display:flex; justify-content:center; gap:8px;
+            z-index:2;
+        }
+        .slider-dot {
+            width:24px; height:6px;
+            background:#fff;
+            border:1px solid #000;
+            cursor:pointer;
+            transition: all .15s;
+        }
+        .slider-dot.is-active { background:#000; }
+        .slider-empty {
+            width:100%; height:100%;
+            display:flex; align-items:center; justify-content:center;
+            font-family:'JetBrains Mono', monospace;
+            font-size: 14vw;
+            font-weight:900;
+            letter-spacing: -.05em;
+            background: linear-gradient(135deg, #fff 0%, #fff 49.5%, #000 49.5%, #000 50.5%, #fff 50.5%);
+            color:#000;
+        }
+
+        /* feature card */
+        .feature {
+            position:relative;
+            transition: background .15s;
+        }
+        .feature:hover { background:#f3f3f3; }
+        .feature-num {
+            font-family:'JetBrains Mono', monospace;
+            font-size:.7rem;
+            letter-spacing:.06em;
+            opacity:.6;
+        }
+
+        /* pricing */
+        .price-card {
+            position:relative;
+            transition: transform .12s;
+        }
+        .price-card.featured {
+            background:#000; color:#fff;
+        }
+        .price-card.featured .btn-brutal { background:#fff; color:#000; border-color:#fff; }
+        .price-card.featured .btn-brutal:hover { background:#000; color:#fff; border-color:#fff; }
+
+        @keyframes blink { 50% { opacity:0; } }
+        .cursor::after { content:"_"; animation: blink 1s steps(1) infinite; margin-left:4px; }
+
+        .ascii-bg {
+            font-family:'JetBrains Mono', monospace;
+            font-size:8px;
+            line-height:1;
+            white-space:pre;
+            opacity:.07;
+            user-select:none;
+            pointer-events:none;
+        }
+    </style>
+</head>
+<body class="min-h-screen">
+
+<!-- ================== HEADER ================== -->
+<header class="brutal border-l-0 border-r-0 border-t-0 sticky top-0 bg-white z-30">
+    <div class="max-w-[1400px] mx-auto flex items-center justify-between px-6 py-3">
+        <a href="/" class="flex items-center gap-3 hover-fill px-2 py-1 brutal">
+            <img src="<?= Security::eAttr($logo) ?>" alt="logo" class="h-7 w-7 object-contain"
+                 onerror="this.style.display='none'">
+            <span class="mono font-extrabold tracking-tight"><?= Security::e($platformName) ?></span>
+        </a>
+        <nav class="flex items-center gap-2">
+            <a href="#features"  class="btn-ghost hidden md:inline-block">Imkoniyatlar</a>
+            <a href="#pricing"   class="btn-ghost hidden md:inline-block">Tariflar</a>
+            <a href="#faq"       class="btn-ghost hidden md:inline-block">FAQ</a>
+            <a href="/auth"      class="btn-ghost">Kirish</a>
+            <a href="/auth"      class="btn-brutal">Ro'yxatdan o'tish</a>
+        </nav>
+    </div>
+    <div class="brutal border-l-0 border-r-0 border-b-0 ticker text-[10px] mono uppercase tracking-widest py-1 bg-white">
+        <div>fizika &middot; milliy sertifikat &middot; bmba metodologiyasi &middot; 30 savol &middot; 120 daqiqa &middot; mathjax + latex &middot; virtual qoralama &middot; bo'limlar tahlili &middot; p2p telegram to'lov &middot; argon2id &middot; jwt hs256 &middot; csrf rolling tokens &middot;</div>
+    </div>
+</header>
+
+<!-- ================== HERO ================== -->
+<section class="max-w-[1400px] mx-auto px-6 pt-12 pb-8">
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+
+        <!-- Headline -->
+        <div class="lg:col-span-5 flex flex-col justify-between">
+            <div>
+                <div class="brutal inline-block px-2 py-1 mono text-[10px] uppercase tracking-widest mb-6">
+                    [ RELEASE 2026 ]
+                </div>
+                <h1 class="text-5xl md:text-6xl lg:text-7xl font-black leading-none cursor">
+                    Fizika.<br>
+                    Sertifikat.<br>
+                    <span class="mono">Mukammallik.</span>
+                </h1>
+                <p class="mt-6 text-lg leading-relaxed max-w-md">
+                    BMBA metodologiyasi bo'yicha avtomatik baholanadigan mock imtihonlar, LaTeX formulalari,
+                    HTML5 Canvas qoralama va Telegram orqali tezkor to'lov tizimi.
+                </p>
+                <div class="mt-8 flex flex-wrap items-center gap-3">
+                    <a href="/auth" class="btn-inverse">→ Bepul boshlash</a>
+                    <a href="#features" class="btn-brutal">Imkoniyatlar</a>
+                </div>
+            </div>
+
+            <div class="mt-10 ascii-bg hidden lg:block">F = m·a    E = m·c²    V = I·R    p = m·v    W = F·s    PV = nRT    F = q·E    P = U·I
+∮E·dA = Q/ε₀    ∮B·dA = 0    ∮E·dl = -dΦB/dt    ∮B·dl = μ₀(I + ε₀ dΦE/dt)</div>
+        </div>
+
+        <!-- Slider -->
+        <div class="lg:col-span-7">
+            <div class="brutal-thick">
+                <div class="slider" id="hero-slider">
+                    <div class="slider-track" id="slider-track">
+                        <?php if (!empty($sliderImages)): ?>
+                            <?php foreach ($sliderImages as $img): ?>
+                                <div class="slide">
+                                    <img src="<?= Security::eAttr($img) ?>" alt="" loading="lazy">
+                                </div>
+                            <?php endforeach; ?>
+                        <?php else: ?>
+                            <div class="slide">
+                                <div class="slider-empty">PHY<br>CERT</div>
+                            </div>
+                        <?php endif; ?>
+                    </div>
+
+                    <?php if (count($sliderImages) > 1): ?>
+                        <button class="slider-arrow prev" id="sl-prev" aria-label="prev">‹</button>
+                        <button class="slider-arrow next" id="sl-next" aria-label="next">›</button>
+                        <div class="slider-dots" id="sl-dots">
+                            <?php foreach ($sliderImages as $i => $_): ?>
+                                <span class="slider-dot <?= $i === 0 ? 'is-active' : '' ?>" data-slide="<?= $i ?>"></span>
+                            <?php endforeach; ?>
+                        </div>
+                    <?php endif; ?>
+                </div>
+                <div class="brutal border-l-0 border-r-0 border-b-0 px-3 py-2 flex items-center justify-between text-[10px] mono uppercase tracking-widest">
+                    <span>fokus_zonasi.svg</span>
+                    <span><?= max(1, count($sliderImages)) ?> / <?= max(1, count($sliderImages)) ?></span>
+                </div>
+            </div>
+        </div>
+
+    </div>
+</section>
+
+<!-- ================== STATS STRIP ================== -->
+<section class="max-w-[1400px] mx-auto px-6">
+    <div class="brutal-thick grid grid-cols-2 md:grid-cols-4">
+        <div class="cell row-bd p-6 text-center">
+            <div class="mono text-4xl md:text-5xl font-black"><?= number_format((int) $stats['users'], 0, '.', ' ') ?>+</div>
+            <div class="text-[10px] mono uppercase tracking-widest mt-1 opacity-60">Foydalanuvchi</div>
+        </div>
+        <div class="cell row-bd p-6 text-center">
+            <div class="mono text-4xl md:text-5xl font-black"><?= number_format((int) $stats['taken'], 0, '.', ' ') ?>+</div>
+            <div class="text-[10px] mono uppercase tracking-widest mt-1 opacity-60">Topshirilgan imtihon</div>
+        </div>
+        <div class="cell row-bd p-6 text-center">
+            <div class="mono text-4xl md:text-5xl font-black"><?= (int) $stats['exams'] ?></div>
+            <div class="text-[10px] mono uppercase tracking-widest mt-1 opacity-60">Mavjud mocklar</div>
+        </div>
+        <div class="row-bd p-6 text-center">
+            <div class="mono text-4xl md:text-5xl font-black"><?= Security::e((string) $stats['uptime']) ?></div>
+            <div class="text-[10px] mono uppercase tracking-widest mt-1 opacity-60">Uptime SLA</div>
+        </div>
+    </div>
+</section>
+
+<!-- ================== HOW IT WORKS ================== -->
+<section class="max-w-[1400px] mx-auto px-6 mt-20">
+    <div class="flex items-baseline justify-between mb-8">
+        <h2 class="mono text-3xl md:text-4xl font-black">[ Qanday ishlaydi? ]</h2>
+        <span class="text-xs mono uppercase tracking-widest opacity-60">Uch qadam</span>
+    </div>
+    <div class="grid grid-cols-1 md:grid-cols-3 brutal-thick">
+        <div class="cell row-bd p-8">
+            <div class="mono text-[10px] uppercase tracking-widest opacity-60">Step 01</div>
+            <div class="mono text-7xl font-black mt-4 leading-none">①</div>
+            <h3 class="mono text-xl font-extrabold mt-6">Ro'yxatdan o'ting</h3>
+            <p class="mt-3 leading-relaxed text-sm">
+                Telefon raqam va parol kiritib, hisob ID raqamingizni oling. Hech qanday fakkultativ
+                e-mail tasdiqlash kerak emas.
+            </p>
+        </div>
+        <div class="cell row-bd p-8">
+            <div class="mono text-[10px] uppercase tracking-widest opacity-60">Step 02</div>
+            <div class="mono text-7xl font-black mt-4 leading-none">②</div>
+            <h3 class="mono text-xl font-extrabold mt-6">Tarif sotib oling</h3>
+            <p class="mt-3 leading-relaxed text-sm">
+                Telegram bot (<span class="mono">@<?= Security::e($botUsername) ?></span>) orqali HUMO yoki VISA
+                kartaga to'lov qiling. Chek rasmini yuborgach, admin 5–30 daqiqada tasdiqlaydi.
+            </p>
+        </div>
+        <div class="row-bd p-8">
+            <div class="mono text-[10px] uppercase tracking-widest opacity-60">Step 03</div>
+            <div class="mono text-7xl font-black mt-4 leading-none">③</div>
+            <h3 class="mono text-xl font-extrabold mt-6">Imtihon topshiring</h3>
+            <p class="mt-3 leading-relaxed text-sm">
+                Fullscreen rejimda 30 ta savol, 120 daqiqa. LaTeX formulalar, virtual qoralama, taymer.
+                Yakunlanganda BMBA bo'yicha bal va bo'limlar tahlili.
+            </p>
+        </div>
+    </div>
+</section>
+
+<!-- ================== FEATURES ================== -->
+<section id="features" class="max-w-[1400px] mx-auto px-6 mt-20">
+    <div class="flex items-baseline justify-between mb-8">
+        <h2 class="mono text-3xl md:text-4xl font-black">[ Imkoniyatlar ]</h2>
+        <span class="text-xs mono uppercase tracking-widest opacity-60">06 modul</span>
+    </div>
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 brutal-thick">
+        <?php
+        $features = [
+            ['BMBA scoring',        'Vaznli ball: $\\text{score}=\\frac{\\sum c_i\\cdot w_i}{\\sum w_i}\\times 100$. Har savol o\'zining vazni va bo\'limi bilan.', 'Σ'],
+            ['LaTeX/MathJax',       'Murakkab formulalar va grafikalar SVG sifatida server-side render qilinadi. $E=mc^2$, $\\nabla\\cdot\\vec{E}=\\rho/\\varepsilon_0$.', '∇'],
+            ['Virtual qoralama',    'HTML5 Canvas asosida sichqoncha yoki stylus bilan chiziladigan raqamli doska. Pen / o\'chirgich / tozalash.',  '✎'],
+            ['Bo\'limlar tahlili',   'Mexanika, Optika, Termodinamika va boshqa bo\'limlar bo\'yicha foiz va "zaif nuqta" markeri.',                '%'],
+            ['P2P Telegram',        'Bot orqali Humo/Visa to\'lov, chek rasmini avtomatik saqlash, admin tasdiqlagach foydalanuvchiga xabar.',     '✓'],
+            ['Enterprise xavfsizlik','Argon2id parol, JWT HS256, CSRF rolling token, SVG sanitizer, IP allowlist, rate limiting.',                '⚿'],
+        ];
+        foreach ($features as $i => [$title, $body, $icon]):
+        ?>
+            <div class="feature cell row-bd p-8">
+                <div class="flex items-baseline justify-between">
+                    <span class="feature-num">[<?= str_pad((string)($i+1), 2, '0', STR_PAD_LEFT) ?> / 06]</span>
+                    <span class="mono text-3xl"><?= Security::e($icon) ?></span>
+                </div>
+                <h3 class="mono text-xl font-extrabold mt-6"><?= Security::e($title) ?></h3>
+                <p class="mt-3 leading-relaxed text-sm"><?= $body /* contains LaTeX intentionally */ ?></p>
+            </div>
+        <?php endforeach; ?>
+    </div>
+</section>
+
+<!-- ================== PRICING ================== -->
+<section id="pricing" class="max-w-[1400px] mx-auto px-6 mt-20">
+    <div class="flex items-baseline justify-between mb-8">
+        <h2 class="mono text-3xl md:text-4xl font-black">[ Tariflar ]</h2>
+        <span class="text-xs mono uppercase tracking-widest opacity-60"><?= count($tariffs) ?> reja</span>
+    </div>
+
+    <?php if (empty($tariffs)): ?>
+        <div class="brutal p-12 text-center mono uppercase tracking-widest text-sm opacity-60">
+            — tariflar tez orada e'lon qilinadi —
+        </div>
+    <?php else: ?>
+        <?php
+            // Pick the middle plan as "featured" if there are 3+ tariffs
+            $featuredIdx = (count($tariffs) >= 3) ? 1 : -1;
+            $cols = max(1, min(4, count($tariffs)));
+        ?>
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-<?= $cols ?> brutal-thick">
+            <?php foreach ($tariffs as $i => $t):
+                $isFeatured = ($i === $featuredIdx);
+            ?>
+                <div class="price-card <?= $isFeatured ? 'featured' : '' ?> cell row-bd p-8 flex flex-col">
+                    <?php if ($isFeatured): ?>
+                        <div class="text-[10px] mono uppercase tracking-widest opacity-80 mb-3">⌬ Eng mashhur</div>
+                    <?php else: ?>
+                        <div class="text-[10px] mono uppercase tracking-widest opacity-60 mb-3">Tarif</div>
+                    <?php endif; ?>
+
+                    <h3 class="mono text-2xl font-black"><?= Security::e((string) $t['name']) ?></h3>
+                    <div class="mt-4 flex items-baseline gap-2">
+                        <span class="mono text-5xl font-black"><?= number_format((float) $t['price'], 0, '.', ' ') ?></span>
+                        <span class="text-sm opacity-70">so'm</span>
+                    </div>
+                    <ul class="mt-6 space-y-2 text-sm flex-1">
+                        <li>● <?= (int) $t['mock_count'] ?> ta mock imtihon</li>
+                        <li>● BMBA bo'yicha avtomatik baholash</li>
+                        <li>● Bo'limlar bo'yicha tahlil</li>
+                        <li>● LaTeX + virtual qoralama</li>
+                        <?php if (!empty($t['description'])): ?>
+                            <li class="opacity-80">● <?= Security::e((string) $t['description']) ?></li>
+                        <?php endif; ?>
+                    </ul>
+                    <a href="/auth" class="btn-brutal mt-6 text-center">→ Tanlash</a>
+                </div>
+            <?php endforeach; ?>
+        </div>
+    <?php endif; ?>
+
+    <div class="mt-4 mono text-[10px] uppercase tracking-widest opacity-60 text-center">
+        * To'lov Telegram bot orqali. Humo / Visa qabul qilinadi.
+    </div>
+</section>
+
+<!-- ================== FAQ ================== -->
+<section id="faq" class="max-w-[1400px] mx-auto px-6 mt-20">
+    <div class="flex items-baseline justify-between mb-8">
+        <h2 class="mono text-3xl md:text-4xl font-black">[ FAQ ]</h2>
+        <span class="text-xs mono uppercase tracking-widest opacity-60">Tez-tez beriladigan savollar</span>
+    </div>
+    <div class="brutal-thick">
+        <?php
+        $faq = [
+            ['Ro\'yxatdan o\'tish bepulmi?',
+             'Ha. Ro\'yxat to\'lovsiz. Mock imtihon topshirish uchun esa tarifdan birini sotib olishingiz kerak.'],
+            ['To\'lov qanday amalga oshiriladi?',
+             'Telegram bot orqali. Tanlangan tarifning to\'lovini Humo yoki Visa kartaga o\'tkazib, chek rasmini botga yuborasiz. Admin 5–30 daqiqada tasdiqlaydi va sizga xabar yuboriladi.'],
+            ['Ball qanday hisoblanadi?',
+             'BMBA (DTM) metodologiyasi bo\'yicha vaznli ball: har savolning vazni va to\'g\'ri javoblar yig\'indisining nisbati × 100. Bo\'limlar bo\'yicha foiz va "zaif nuqta" markeri ham beriladi.'],
+            ['Imtihon vaqtida internet uzilsa nima bo\'ladi?',
+             'Har bir javob avtomatik saqlanadi. Brauzer yopilsa-da, qaytib kirganingizda imtihon davom etadi. Faqat taymer to\'xtamaydi.'],
+            ['Mobile qurilmadan topshira olamanmi?',
+             'Ha. Imtihon to\'liq responsive. Virtual qoralama touch va stylus bilan ishlaydi.'],
+            ['Ma\'lumotlarim xavfsizmi?',
+             'Argon2id parol hashing, HttpOnly Secure SameSite=Strict cookie, JWT HS256, CSRF rolling tokens, CSP, HSTS, SVG sanitizer. Auditlandi.'],
+        ];
+        foreach ($faq as $i => [$q, $a]):
+        ?>
+            <details class="row-bd hover-fill" <?= $i === 0 ? 'open' : '' ?>>
+                <summary class="p-5 cursor-pointer flex items-center gap-3">
+                    <span class="mono text-[10px] uppercase tracking-widest opacity-60">[Q<?= str_pad((string)($i+1), 2, '0', STR_PAD_LEFT) ?>]</span>
+                    <span class="mono font-bold flex-1"><?= Security::e($q) ?></span>
+                    <span class="mono opacity-60">+</span>
+                </summary>
+                <div class="px-5 pb-5 -mt-2 text-sm leading-relaxed max-w-3xl">
+                    <?= Security::e($a) ?>
+                </div>
+            </details>
+        <?php endforeach; ?>
+    </div>
+</section>
+
+<!-- ================== CTA STRIP ================== -->
+<section class="mt-20">
+    <div class="bg-black text-white">
+        <div class="max-w-[1400px] mx-auto px-6 py-16 grid grid-cols-1 md:grid-cols-2 gap-6 items-center">
+            <div>
+                <div class="mono text-[10px] uppercase tracking-widest opacity-60">[ READY ]</div>
+                <h2 class="text-4xl md:text-5xl font-black leading-none mt-2">
+                    Boshlash uchun ro'yxatdan o'ting.
+                </h2>
+                <p class="mt-4 leading-relaxed opacity-80 max-w-lg">
+                    Bir necha soniyada ro'yxatdan o'tib, ID raqamingizni oling.
+                    Birinchi mockni hozirning o'zida boshlashingiz mumkin.
+                </p>
+            </div>
+            <div class="flex md:justify-end gap-3 flex-wrap">
+                <a href="/auth" class="btn-inverse" style="background:#fff;color:#000;border-color:#fff;">→ Ro'yxatdan o'tish</a>
+                <a href="#pricing" style="background:transparent;color:#fff;border:2px solid #fff;padding:.85rem 1.5rem;font-weight:800;text-transform:uppercase;letter-spacing:.06em;display:inline-block;">Tariflar</a>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- ================== FOOTER ================== -->
+<footer class="brutal border-l-0 border-r-0 border-b-0 mt-0">
+    <div class="max-w-[1400px] mx-auto px-6 py-10 grid grid-cols-2 md:grid-cols-4 gap-6">
+        <div class="col-span-2">
+            <div class="flex items-center gap-3">
+                <img src="<?= Security::eAttr($logo) ?>" alt="" class="h-7 w-7 object-contain"
+                     onerror="this.style.display='none'">
+                <span class="mono font-extrabold"><?= Security::e($platformName) ?></span>
+            </div>
+            <p class="mt-3 text-sm leading-relaxed max-w-md opacity-80">
+                Fizika fanidan Milliy Sertifikat olishga tayyorlovchi mega-platforma.
+                BMBA scoring, MathJax, virtual qoralama, P2P Telegram payment.
+            </p>
+        </div>
+        <div>
+            <div class="mono text-[10px] uppercase tracking-widest opacity-60">Sayt</div>
+            <ul class="mt-2 space-y-1.5 text-sm">
+                <li><a href="/auth"      class="hover-fill brutal px-2 py-1 inline-block">Kirish</a></li>
+                <li><a href="#features"  class="hover-fill brutal px-2 py-1 inline-block">Imkoniyatlar</a></li>
+                <li><a href="#pricing"   class="hover-fill brutal px-2 py-1 inline-block">Tariflar</a></li>
+                <li><a href="#faq"       class="hover-fill brutal px-2 py-1 inline-block">FAQ</a></li>
+            </ul>
+        </div>
+        <div>
+            <div class="mono text-[10px] uppercase tracking-widest opacity-60">Bog'lanish</div>
+            <ul class="mt-2 space-y-1.5 text-sm">
+                <li><a href="https://t.me/<?= Security::eAttr($botUsername) ?>"
+                       target="_blank" rel="noopener noreferrer"
+                       class="hover-fill brutal px-2 py-1 inline-block">@<?= Security::e($botUsername) ?></a></li>
+            </ul>
+        </div>
+    </div>
+    <div class="brutal border-l-0 border-r-0 border-b-0">
+        <div class="max-w-[1400px] mx-auto px-6 py-3 flex flex-wrap items-center justify-between gap-3 text-[10px] mono uppercase tracking-widest">
+            <span>&copy; 2026 phys.cert &middot; v1.0</span>
+            <div class="flex items-center gap-2 flex-wrap">
+                <span class="brutal px-2 py-0.5">CSP</span>
+                <span class="brutal px-2 py-0.5">HSTS</span>
+                <span class="brutal px-2 py-0.5">JWT HS256</span>
+                <span class="brutal px-2 py-0.5">CSRF rolling</span>
+                <span class="brutal px-2 py-0.5">Argon2id</span>
+                <span class="brutal px-2 py-0.5">SVG sanitized</span>
+            </div>
+        </div>
+    </div>
+</footer>
+
+<script>
+'use strict';
+
+/* ===================================================================
+   SLIDER  (auto-play + arrows + dots, paused on hover)
+   =================================================================== */
+(function () {
+    const track = document.getElementById('slider-track');
+    if (!track) return;
+    const slides = track.querySelectorAll('.slide');
+    if (slides.length <= 1) return;
+
+    const dots  = document.querySelectorAll('#sl-dots .slider-dot');
+    const prev  = document.getElementById('sl-prev');
+    const next  = document.getElementById('sl-next');
+    const total = slides.length;
+    let idx = 0;
+    let timer = null;
+    const interval = 5000;
+
+    function go(i) {
+        idx = ((i % total) + total) % total;
+        track.style.transform = 'translateX(-' + (idx * 100) + '%)';
+        dots.forEach((d, k) => d.classList.toggle('is-active', k === idx));
+    }
+    function start() { stop(); timer = setInterval(() => go(idx + 1), interval); }
+    function stop()  { if (timer) { clearInterval(timer); timer = null; } }
+
+    prev?.addEventListener('click', () => { go(idx - 1); start(); });
+    next?.addEventListener('click', () => { go(idx + 1); start(); });
+    dots.forEach(d => d.addEventListener('click', () => {
+        go(parseInt(d.dataset.slide, 10)); start();
+    }));
+
+    const slider = document.getElementById('hero-slider');
+    slider.addEventListener('mouseenter', stop);
+    slider.addEventListener('mouseleave', start);
+
+    // Pause auto-play when tab is hidden (battery + a11y)
+    document.addEventListener('visibilitychange', () => {
+        document.hidden ? stop() : start();
+    });
+
+    // Touch swipe support
+    let touchX = null;
+    slider.addEventListener('touchstart', e => { touchX = e.touches[0].clientX; }, { passive: true });
+    slider.addEventListener('touchend',   e => {
+        if (touchX === null) return;
+        const dx = e.changedTouches[0].clientX - touchX;
+        if (Math.abs(dx) > 40) go(idx + (dx < 0 ? 1 : -1));
+        touchX = null;
+        start();
+    });
+
+    start();
+})();
+
+/* ===================================================================
+   Smooth scroll for in-page anchors
+   =================================================================== */
+document.querySelectorAll('a[href^="#"]').forEach(a => {
+    a.addEventListener('click', e => {
+        const id = a.getAttribute('href').slice(1);
+        const el = document.getElementById(id);
+        if (el) {
+            e.preventDefault();
+            el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+    });
+});
+</script>
+
+</body>
+</html>

@@ -1,0 +1,7 @@
+## Block PHP execution and directory listing inside upload directories
+php_flag engine off
+Options -ExecCGI -Indexes
+AddType text/plain .php .php3 .php4 .php5 .phtml .phar .pht .pl .py .jsp .asp .htm .shtml .sh .cgi
+<FilesMatch "\.(php|php3|php4|php5|phtml|phar|pht)$">
+    Require all denied
+</FilesMatch>

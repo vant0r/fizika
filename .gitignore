@@ -1,0 +1,10 @@
+.env
+*.log
+public/uploads/screenshots/*
+public/uploads/logo/*
+public/uploads/slider/*
+!public/uploads/**/.gitkeep
+!public/uploads/.htaccess
+.DS_Store
+Thumbs.db
+/vendor/
