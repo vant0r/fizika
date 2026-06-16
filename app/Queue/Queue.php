@@ -243,9 +243,11 @@ final class Queue
      */
     public static function handlerFor(string $type): JobHandler
     {
-        return match ($type) {
-            'tg_send' => new \App\Queue\Handlers\TelegramSendHandler(),
-            default   => throw new RuntimeException("Unknown job type: $type"),
-        };
+        switch ($type) {
+            case 'tg_send':
+                return new \App\Queue\Handlers\TelegramSendHandler();
+            default:
+                throw new RuntimeException("Unknown job type: $type");
+        }
     }
 }

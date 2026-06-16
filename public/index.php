@@ -126,9 +126,9 @@ header('Content-Type: application/json; charset=utf-8');
 echo json_encode(['error' => 'Not Found', 'path' => $uri], JSON_UNESCAPED_UNICODE);
 
 /* ------------------------------------------------------------------
- *  Dispatch helpers
+ *  Dispatch helpers (PHP 7.4+ compatible — no union types)
  * ------------------------------------------------------------------ */
-function dispatch(callable|array $handler): void
+function dispatch($handler): void
 {
     if (is_array($handler)) {
         [$class, $method] = $handler;
@@ -136,13 +136,15 @@ function dispatch(callable|array $handler): void
         $instance->{$method}();
         return;
     }
-    $handler();
+    if (is_callable($handler)) {
+        $handler();
+    }
 }
 
-/** @param array<int,int> $args */
+/** @param array $args */
 function dispatchWithArgs(array $handler, array $args): void
 {
     [$class, $method] = $handler;
     $instance = is_string($class) ? new $class() : $class;
-    $instance->{$method}(...$args);
+    call_user_func_array([$instance, $method], $args);
 }

@@ -1,6 +1,25 @@
 <?php
 declare(strict_types=1);
 
+/* ------------------------------------------------------------------
+ *  PHP 7.4 polyfills for PHP 8.0+ string functions
+ * ------------------------------------------------------------------ */
+if (!function_exists('str_contains')) {
+    function str_contains(string $haystack, string $needle): bool {
+        return $needle === '' || strpos($haystack, $needle) !== false;
+    }
+}
+if (!function_exists('str_starts_with')) {
+    function str_starts_with(string $haystack, string $needle): bool {
+        return $needle === '' || strncmp($haystack, $needle, strlen($needle)) === 0;
+    }
+}
+if (!function_exists('str_ends_with')) {
+    function str_ends_with(string $haystack, string $needle): bool {
+        return $needle === '' || substr($haystack, -strlen($needle)) === $needle;
+    }
+}
+
 /**
  * bootstrap.php
  * -------------
@@ -85,21 +104,48 @@ if (!$composerLoaded) {
 })();
 
 /* ------------------------------------------------------------------
- *  Required-env validation (fail fast on misconfiguration)
+ *  Required-env validation
+ *  If .env is missing or APP_KEY not set → redirect to install.php
+ *  (user-friendly instead of cryptic 500)
  * ------------------------------------------------------------------ */
+$_envMissing = false;
 foreach (['APP_KEY', 'DB_MASTER_DSN'] as $required) {
     if (((string) getenv($required)) === '') {
-        if (PHP_SAPI === 'cli') {
-            fwrite(STDERR, "Missing required env var: $required\n");
-            exit(1);
-        }
-        // In HTTP context, surface a hard 500 — never leak which one
-        http_response_code(500);
-        header('Content-Type: text/plain; charset=utf-8');
-        echo 'Configuration error.';
-        exit;
+        $_envMissing = true;
+        break;
     }
 }
+if ($_envMissing) {
+    if (PHP_SAPI === 'cli') {
+        fwrite(STDERR, "Missing required env var. Run install.php or create .env\n");
+        exit(1);
+    }
+    // If install.php exists, redirect there; otherwise show friendly error
+    $installPath = (is_file(__DIR__ . '/public/install.php'))
+        ? '/install.php'
+        : null;
+    if ($installPath !== null) {
+        // Don't redirect if already on install.php (infinite loop guard)
+        $currentUri = parse_url((string)($_SERVER['REQUEST_URI'] ?? ''), PHP_URL_PATH) ?: '';
+        if (strpos($currentUri, 'install.php') === false) {
+            header('Location: ' . $installPath);
+            exit;
+        }
+        // If we ARE on install.php, let it proceed without bootstrap checks
+        return;
+    }
+    // No install.php — show plain error
+    http_response_code(500);
+    header('Content-Type: text/html; charset=utf-8');
+    echo '<!DOCTYPE html><html><head><title>Configuration Error</title></head><body style="font-family:sans-serif;text-align:center;padding:60px;">';
+    echo '<h1>Configuration Error</h1>';
+    echo '<p>.env fayli topilmadi yoki APP_KEY/DB sozlanmagan.</p>';
+    echo '<p>Iltimos, <code>.env.example</code> faylini <code>.env</code> ga nusxalab, sozlamalarni kiriting.</p>';
+    echo '<p>Yoki <code>public/install.php</code> faylini serverga yuklang.</p>';
+    echo '</body></html>';
+    exit;
+}
+unset($_envMissing);
 
 /* ------------------------------------------------------------------
  *  Runtime configuration

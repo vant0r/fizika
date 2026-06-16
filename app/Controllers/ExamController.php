@@ -65,7 +65,7 @@ final class ExamController
     public function start(int $examId): void
     {
         $user = AuthManager::requireUser();
-        Security::requireCsrf('exam:' . $examId, singleUse: false);
+        Security::requireCsrf('exam:' . $examId, false);
         Security::enforceRateLimit('exam:start:' . $user['id'], 10, 60);
 
         $exam = Database::selectOne(
@@ -185,7 +185,7 @@ final class ExamController
     public function saveAnswer(int $examId): void
     {
         $user = AuthManager::requireUser();
-        Security::requireCsrf('exam:' . $examId, singleUse: false);
+        Security::requireCsrf('exam:' . $examId, false);
         Security::enforceRateLimit('exam:save:' . $user['id'], 240, 60);
 
         $body = self::readJson();
@@ -230,7 +230,7 @@ final class ExamController
     public function submit(int $examId): void
     {
         $user = AuthManager::requireUser();
-        Security::requireCsrf('exam:' . $examId, singleUse: false);
+        Security::requireCsrf('exam:' . $examId, false);
         Security::enforceRateLimit('exam:submit:' . $user['id'], 5, 60);
 
         $session = Database::selectOne(

@@ -1,19 +1,24 @@
 ## ====================================================================
 ##  Root .htaccess
 ##  Forces all traffic through /public/ (DOCUMENT_ROOT-safe scheme).
-##  Use this only on shared hosts (x10hosting, cPanel) where you cannot
-##  set DocumentRoot to /public directly.
+##  Compatible with Apache 2.2+ shared hosting (x10hosting, cPanel).
 ## ====================================================================
 
 RewriteEngine On
 
 # Don't expose internal directories
-RewriteRule ^(app|database|views)(/|$) - [F,L]
+RewriteRule ^(app|database|views|bin)(/|$) - [F,L]
 
 # Map root → public/
 RewriteCond %{REQUEST_URI} !^/public/
 RewriteRule ^(.*)$ public/$1 [L]
 
 <FilesMatch "^(\.env|\.git|composer\.(json|lock)|.*\.sql|.*\.md|bootstrap\.php)$">
-    Require all denied
+    <IfModule mod_authz_core.c>
+        Require all denied
+    </IfModule>
+    <IfModule !mod_authz_core.c>
+        Order deny,allow
+        Deny from all
+    </IfModule>
 </FilesMatch>

@@ -125,7 +125,7 @@ final class AuthController
     public function tfaBegin(): void
     {
         $user = AuthManager::requireUser();
-        Security::requireCsrf('admin', singleUse: false);
+        Security::requireCsrf('admin', false);
         $accountName = (string) ($user['phone'] ?? ('user-' . $user['id']));
         try {
             $r = AuthManager::begin2faEnrollment((int) $user['id'], $accountName);
@@ -144,7 +144,7 @@ final class AuthController
     public function tfaConfirm(): void
     {
         $user = AuthManager::requireUser();
-        Security::requireCsrf('admin', singleUse: false);
+        Security::requireCsrf('admin', false);
         $body = self::readJson();
         $code = (string) ($body['code'] ?? '');
         try {
@@ -158,7 +158,7 @@ final class AuthController
     public function tfaDisable(): void
     {
         $user = AuthManager::requireUser();
-        Security::requireCsrf('admin', singleUse: false);
+        Security::requireCsrf('admin', false);
         $body = self::readJson();
         $code = (string) ($body['code'] ?? '');
         try {
@@ -172,7 +172,7 @@ final class AuthController
     public function tfaRegenerate(): void
     {
         $user = AuthManager::requireUser();
-        Security::requireCsrf('admin', singleUse: false);
+        Security::requireCsrf('admin', false);
         $body = self::readJson();
         $code = (string) ($body['code'] ?? '');
         try {

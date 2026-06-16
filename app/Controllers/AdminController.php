@@ -64,7 +64,7 @@ final class AdminController
     public function runMaintenance(): void
     {
         AuthManager::requireRole('admin');
-        Security::requireCsrf('admin', singleUse: false);
+        Security::requireCsrf('admin', false);
         Security::enforceRateLimit('admin:gc', 10, 60);   // protect against abuse
         $result = Security::gcAll();
         self::json([
@@ -132,7 +132,7 @@ final class AdminController
     public function approvePayment(int $paymentId): void
     {
         $admin = AuthManager::requireRole('admin');
-        Security::requireCsrf('admin', singleUse: false);
+        Security::requireCsrf('admin', false);
 
         try {
             $context = Database::transaction(function ($pdo) use ($paymentId, $admin) {
@@ -199,7 +199,7 @@ final class AdminController
     public function rejectPayment(int $paymentId): void
     {
         $admin = AuthManager::requireRole('admin');
-        Security::requireCsrf('admin', singleUse: false);
+        Security::requireCsrf('admin', false);
         $body = self::readJson();
         $note = mb_substr((string) ($body['note'] ?? ''), 0, 500);
 
@@ -264,7 +264,7 @@ final class AdminController
     public function saveTariff(): void
     {
         AuthManager::requireRole('admin');
-        Security::requireCsrf('admin', singleUse: false);
+        Security::requireCsrf('admin', false);
         $b = self::readJson();
 
         $id          = (int)   ($b['id'] ?? 0);
@@ -307,7 +307,7 @@ final class AdminController
     public function deleteTariff(int $id): void
     {
         AuthManager::requireRole('admin');
-        Security::requireCsrf('admin', singleUse: false);
+        Security::requireCsrf('admin', false);
         Database::execute("UPDATE tariffs SET is_active = 0 WHERE id = :id", [':id' => $id]);
         self::json(['ok' => true]);
     }
@@ -355,7 +355,7 @@ final class AdminController
     public function saveExam(): void
     {
         $admin = AuthManager::requireRole('admin');
-        Security::requireCsrf('admin', singleUse: false);
+        Security::requireCsrf('admin', false);
         $b = self::readJson();
 
         $id        = (int)    ($b['id']        ?? 0);
@@ -403,7 +403,7 @@ final class AdminController
     public function deleteExam(int $id): void
     {
         AuthManager::requireRole('admin');
-        Security::requireCsrf('admin', singleUse: false);
+        Security::requireCsrf('admin', false);
         // Soft delete: archive the exam (CASCADE on questions would lose work)
         Database::execute("UPDATE exams SET status = 'archived' WHERE id = :id", [':id' => $id]);
         self::json(['ok' => true]);
@@ -462,7 +462,7 @@ final class AdminController
     public function saveQuestion(): void
     {
         AuthManager::requireRole('admin');
-        Security::requireCsrf('admin', singleUse: false);
+        Security::requireCsrf('admin', false);
         $b = self::readJson();
 
         $id            = (int)    ($b['id']            ?? 0);
@@ -600,7 +600,7 @@ final class AdminController
     public function deleteQuestion(int $id): void
     {
         AuthManager::requireRole('admin');
-        Security::requireCsrf('admin', singleUse: false);
+        Security::requireCsrf('admin', false);
         Database::execute("DELETE FROM questions WHERE id = :id", [':id' => $id]);
         self::json(['ok' => true]);
     }
@@ -630,7 +630,7 @@ final class AdminController
     public function updateCards(): void
     {
         AuthManager::requireRole('admin');
-        Security::requireCsrf('admin', singleUse: false);
+        Security::requireCsrf('admin', false);
         $b = self::readJson();
         $humo   = trim((string) ($b['humo_card']   ?? ''));
         $visa   = trim((string) ($b['visa_card']   ?? ''));
@@ -646,9 +646,9 @@ final class AdminController
     public function uploadLogo(): void
     {
         $admin = AuthManager::requireRole('admin');
-        Security::requireCsrf('admin', singleUse: false);
+        Security::requireCsrf('admin', false);
         // Logo allows SVG (sanitized). Slider/screenshots do not.
-        $path = self::storeImage($_FILES['logo'] ?? null, self::UPLOAD_LOGO_DIR, allowSvg: true);
+        $path = self::storeImage($_FILES['logo'] ?? null, self::UPLOAD_LOGO_DIR, true);
         self::upsertSetting('site_logo', $path, (int) $admin['id']);
         self::json(['ok' => true, 'path' => $path]);
     }
@@ -656,9 +656,9 @@ final class AdminController
     public function uploadSliderImage(): void
     {
         $admin = AuthManager::requireRole('admin');
-        Security::requireCsrf('admin', singleUse: false);
+        Security::requireCsrf('admin', false);
         // Slider images: raster only — defense in depth (SVG not needed for marketing slides).
-        $path  = self::storeImage($_FILES['slide'] ?? null, self::UPLOAD_SLIDER_DIR, allowSvg: false);
+        $path  = self::storeImage($_FILES['slide'] ?? null, self::UPLOAD_SLIDER_DIR, false);
         $cur   = Database::selectOne(
             "SELECT `value` FROM system_settings WHERE `key` = 'slider_images'"
         );
@@ -675,7 +675,7 @@ final class AdminController
     public function deleteSliderImage(): void
     {
         $admin = AuthManager::requireRole('admin');
-        Security::requireCsrf('admin', singleUse: false);
+        Security::requireCsrf('admin', false);
         $b = self::readJson();
         $target = (string) ($b['path'] ?? '');
         if ($target === '') self::json(['error' => 'path required'], 422);
@@ -734,13 +734,12 @@ final class AdminController
             self::json(['error' => "Faqat $list ruxsat etilgan"], 415);
         }
 
-        $ext = match ($mime) {
-            'image/png'     => 'png',
-            'image/jpeg'    => 'jpg',
-            'image/webp'    => 'webp',
-            'image/svg+xml' => 'svg',
-            default         => 'bin',
-        };
+        $ext = isset($mime) ? (
+            $mime === 'image/png'     ? 'png' : (
+            $mime === 'image/jpeg'    ? 'jpg' : (
+            $mime === 'image/webp'    ? 'webp' : (
+            $mime === 'image/svg+xml' ? 'svg' : 'bin'
+        )))) : 'bin';
 
         // 4) For raster: re-decode to make sure it's actually a valid image
         //    (defeats polyglot files: a JPEG that's also valid HTML/JS).
