@@ -57,6 +57,7 @@ if ($uri === '') $uri = '/';
 $routes = [
     /* PUBLIC PAGES */
     'GET /'                  => [HomeController::class,   'landing'],
+    'GET /about'             => [HomeController::class,   'about'],
     'GET /auth'              => [AuthController::class,   'showAuthPage'],
     'GET /profile'           => [AuthController::class,   'showProfile'],
     'GET /admin'             => [AdminController::class,  'panel'],
@@ -109,6 +110,10 @@ $routes = [
     'POST /api/admin/logo'              => [AdminController::class, 'uploadLogo'],
     'POST /api/admin/slider'            => [AdminController::class, 'uploadSliderImage'],
     'POST /api/admin/slider/delete'     => [AdminController::class, 'deleteSliderImage'],
+    'POST /api/admin/banner'            => [AdminController::class, 'uploadBanner'],
+    'POST /api/admin/banner/delete'     => [AdminController::class, 'deleteBanner'],
+    'POST /api/admin/about'             => [AdminController::class, 'updateAboutText'],
+    'GET  /api/admin/reviews'           => [AdminController::class, 'listReviews'],
 ];
 
 /* Try direct match first */
@@ -136,6 +141,7 @@ $patterns = [
     ['GET',  '#^/api/admin/exams/(\d+)/questions$#',  [AdminController::class, 'listQuestions']],
     ['GET',  '#^/api/admin/questions/(\d+)$#',        [AdminController::class, 'getQuestion']],
     ['POST', '#^/api/admin/questions/(\d+)/delete$#', [AdminController::class, 'deleteQuestion']],
+    ['POST', '#^/api/admin/reviews/(\d+)$#',          [AdminController::class, 'reviewAnswer']],
 ];
 
 foreach ($patterns as [$m, $regex, $handler]) {

@@ -1,0 +1,112 @@
+<?php
+use App\Core\Security;
+/** @var string $logo */
+/** @var string $platformName */
+/** @var string $aboutText */
+/** @var string $botUsername */
+?><!DOCTYPE html>
+<html lang="uz">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tizim haqida — <?= Security::e($platformName) ?></title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>tailwind.config={theme:{extend:{colors:{sky:{50:'#f0f9ff',100:'#e0f2fe',200:'#bae6fd',300:'#7dd3fc',400:'#38bdf8',500:'#0ea5e9',600:'#0284c7',700:'#0369a1',800:'#075985',900:'#0c4a6e'}}}}}</script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <style>
+        body{font-family:'Inter',sans-serif;background:#fff;}
+        ::selection{background:#0ea5e9;color:#fff;}
+        .card{background:#fff;border-radius:16px;border:1px solid #e0f2fe;box-shadow:0 2px 12px rgba(14,165,233,.04);}
+        .btn-p{background:linear-gradient(135deg,#0ea5e9,#0284c7);color:#fff;border:none;border-radius:12px;padding:.85rem 1.8rem;font-weight:700;cursor:pointer;transition:all .2s;display:inline-block;text-decoration:none;font-size:.9rem;}
+        .btn-p:hover{transform:translateY(-2px);box-shadow:0 8px 25px rgba(14,165,233,.3);}
+    </style>
+</head>
+<body>
+
+<header class="sticky top-0 z-30 bg-white/80 backdrop-blur-md border-b border-sky-50">
+    <div class="max-w-7xl mx-auto flex items-center justify-between px-6 py-4">
+        <a href="/" class="flex items-center gap-3">
+            <div class="w-9 h-9 rounded-xl bg-gradient-to-br from-sky-400 to-sky-600 flex items-center justify-center shadow-sm shadow-sky-200">
+                <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+            </div>
+            <span class="text-base font-bold text-gray-900"><?= Security::e($platformName) ?></span>
+        </a>
+        <nav class="flex items-center gap-3">
+            <a href="/" class="text-sm text-gray-600 hover:text-sky-600 font-medium transition">Bosh sahifa</a>
+            <a href="/about" class="text-sm text-sky-600 font-medium">Tizim haqida</a>
+            <a href="/auth" class="btn-p text-xs py-2 px-4">Kirish</a>
+        </nav>
+    </div>
+</header>
+
+<main class="max-w-4xl mx-auto px-6 py-16">
+    <div class="text-center mb-12">
+        <div class="inline-flex items-center gap-2 bg-sky-50 text-sky-700 text-xs font-semibold px-3 py-1.5 rounded-full mb-4">
+            <svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"/></svg>
+            Tizim haqida
+        </div>
+        <h1 class="text-4xl md:text-5xl font-black text-gray-900 leading-tight">
+            <?= Security::e($platformName) ?>
+        </h1>
+        <p class="mt-4 text-lg text-gray-600">Fizika fanidan Milliy Sertifikat platformasi</p>
+    </div>
+
+    <div class="card p-8 mb-6">
+        <h2 class="text-xl font-bold text-gray-900 mb-4">Platforma haqida</h2>
+        <div class="text-gray-700 leading-relaxed whitespace-pre-line"><?= Security::e($aboutText) ?></div>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+        <div class="card p-6">
+            <div class="w-10 h-10 rounded-xl bg-sky-50 flex items-center justify-center mb-3">
+                <svg class="w-5 h-5 text-sky-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+            </div>
+            <h3 class="font-bold text-gray-900">BMBA scoring</h3>
+            <p class="text-sm text-gray-500 mt-1">Vaznli ball hisoblash. Har savol o'z vazni va bo'limi bilan baholanadi.</p>
+        </div>
+        <div class="card p-6">
+            <div class="w-10 h-10 rounded-xl bg-sky-50 flex items-center justify-center mb-3">
+                <svg class="w-5 h-5 text-sky-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 5a1 1 0 011-1h14a1 1 0 011 1v2a1 1 0 01-1 1H5a1 1 0 01-1-1V5z"/></svg>
+            </div>
+            <h3 class="font-bold text-gray-900">3 xil savol turi</h3>
+            <p class="text-sm text-gray-500 mt-1">MCQ (variantli), Closed (yopiq javob), Combined (33-34-35 birlashtirilgan).</p>
+        </div>
+        <div class="card p-6">
+            <div class="w-10 h-10 rounded-xl bg-sky-50 flex items-center justify-center mb-3">
+                <svg class="w-5 h-5 text-sky-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/></svg>
+            </div>
+            <h3 class="font-bold text-gray-900">Virtual qoralama</h3>
+            <p class="text-sm text-gray-500 mt-1">HTML5 Canvas — qalam, o'chirgich, tozalash. Sichqoncha va sensorli ekran.</p>
+        </div>
+        <div class="card p-6">
+            <div class="w-10 h-10 rounded-xl bg-sky-50 flex items-center justify-center mb-3">
+                <svg class="w-5 h-5 text-sky-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/></svg>
+            </div>
+            <h3 class="font-bold text-gray-900">Telegram orqali to'lov</h3>
+            <p class="text-sm text-gray-500 mt-1">@<?= Security::e($botUsername) ?> bot orqali Humo/Visa to'lovlari.</p>
+        </div>
+    </div>
+
+    <div class="card p-8 mb-6">
+        <h2 class="text-xl font-bold text-gray-900 mb-4">Imtihon strukturasi</h2>
+        <ul class="space-y-3 text-gray-700">
+            <li class="flex items-start gap-3"><span class="text-sky-600 font-bold mt-0.5">→</span> 30 ta savol, 120 daqiqa</li>
+            <li class="flex items-start gap-3"><span class="text-sky-600 font-bold mt-0.5">→</span> Variantli savollar (mcq) — bir to'g'ri javob</li>
+            <li class="flex items-start gap-3"><span class="text-sky-600 font-bold mt-0.5">→</span> Yopiq savollar (closed) — namunaviy javob bilan, admin tasdiqlaydi</li>
+            <li class="flex items-start gap-3"><span class="text-sky-600 font-bold mt-0.5">→</span> Birlashtirilgan testlar (33, 34, 35) — bir kontekstga 3 ta savol</li>
+            <li class="flex items-start gap-3"><span class="text-sky-600 font-bold mt-0.5">→</span> Bo'limlar bo'yicha tahlil: Mexanika, Optika, Termodinamika va h.k.</li>
+            <li class="flex items-start gap-3"><span class="text-sky-600 font-bold mt-0.5">→</span> LaTeX formulalar va SVG grafiklar</li>
+        </ul>
+    </div>
+
+    <div class="text-center">
+        <a href="/auth" class="btn-p">Boshlash →</a>
+    </div>
+</main>
+
+<footer class="border-t border-sky-50 mt-16 py-8 text-center text-xs text-gray-400">
+    &copy; 2026 <?= Security::e($platformName) ?>
+</footer>
+
+</body>
+</html>

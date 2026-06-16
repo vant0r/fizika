@@ -45,10 +45,11 @@ final class HomeController
         foreach ($settingsRows as $r) {
             $settings[$r['key']] = $r['value'];
         }
-
         $logo         = (string) ($settings['site_logo']     ?? '/uploads/logo/default.png');
+        $banner       = (string) ($settings['site_banner']   ?? '');
         $platformName = (string) ($settings['platform_name'] ?? 'Physics National Certificate');
         $botUsername  = (string) ($settings['bot_username']  ?? 'physics_cert_bot');
+        $aboutText    = (string) ($settings['about_text']    ?? 'Physics National Certificate platformasi.');
 
         $sliderImages = [];
         if (!empty($settings['slider_images'])) {
@@ -82,6 +83,21 @@ final class HomeController
         header('Vary: Cookie');
 
         require __DIR__ . '/../../views/landing.phtml';
+    }
+
+    public function about(): void
+    {
+        Security::securityHeaders();
+        $settingsRows = Database::select("SELECT `key`, `value` FROM system_settings");
+        $settings = [];
+        foreach ($settingsRows as $r) $settings[$r['key']] = $r['value'];
+
+        $logo         = (string) ($settings['site_logo']     ?? '/uploads/logo/default.png');
+        $platformName = (string) ($settings['platform_name'] ?? 'Physics National Certificate');
+        $aboutText    = (string) ($settings['about_text']    ?? 'Physics National Certificate platformasi.');
+        $botUsername  = (string) ($settings['bot_username']  ?? 'physics_cert_bot');
+
+        require __DIR__ . '/../../views/about.phtml';
     }
 
     /**

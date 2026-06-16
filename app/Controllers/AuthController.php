@@ -51,17 +51,17 @@ final class AuthController
 
     public function register(): void
     {
-        // Public registration is now OTP-gated. Step 1 — request OTP.
+        // Direct registration — no SMS OTP required.
+        // (The OTP flow remains available via /api/auth/register/verify and /resend
+        //  endpoints for future use, but is not invoked here.)
         $body = self::readJson();
         Security::requireCsrf('auth:register');
         try {
-            $result = AuthManager::requestRegistrationOtp(Security::sanitize($body));
+            $tokens = AuthManager::register(Security::sanitize($body));
         } catch (Throwable $e) {
             self::json(['error' => $e->getMessage()], 422);
         }
-        // No tokens yet — just challenge metadata for the client to render
-        // the OTP step.
-        self::json(['ok' => true, 'data' => $result]);
+        self::json(['ok' => true, 'data' => $tokens]);
     }
 
     public function verifyRegistration(): void

@@ -205,8 +205,8 @@ use App\Core\Security;
 
                         <div id="rg_err" class="hidden rounded-xl bg-red-50 border border-red-100 text-red-700 text-sm p-3"></div>
 
-                        <button type="submit" class="btn-primary">Davom etish</button>
-                        <p class="text-center text-[11px] text-gray-400">Telefoningizga 6 xonali tasdiqlash kodi yuboriladi</p>
+                        <button type="submit" class="btn-primary">Ro'yxatdan o'tish</button>
+                        <p class="text-center text-[11px] text-gray-400">Hisobingiz darhol yaratiladi</p>
                     </form>
 
                     <!-- Stage B: OTP -->
@@ -416,9 +416,10 @@ document.getElementById('registerForm').addEventListener('submit', async (e) => 
     try {
         const res = await fetch('/api/auth/register', { method:'POST', headers:{'Content-Type':'application/json','X-CSRF-Token':data._csrf,'X-Requested-With':'XMLHttpRequest'}, body:JSON.stringify(data) });
         const fresh = res.headers.get('X-CSRF-Token');
-        if(fresh){form.querySelector('input[name=_csrf]').value=fresh; document.getElementById('otpForm').querySelector('input[name=_csrf]').value=fresh;}
+        if(fresh) form.querySelector('input[name=_csrf]').value=fresh;
         const json = await res.json(); if(!res.ok) throw new Error(json.error||'Failed');
-        showOtpStage(json.data, data);
+        // Direct redirect — no OTP step
+        window.location.href = (json?.data?.role === 'admin') ? '/admin' : '/profile';
     } catch(err) { showError('rg_err', err.message); }
     finally { setBusy(form, false); }
 });

@@ -26,6 +26,7 @@ final class AdminController
 {
     private const UPLOAD_LOGO_DIR    = '/uploads/logo/';
     private const UPLOAD_SLIDER_DIR  = '/uploads/slider/';
+    private const UPLOAD_BANNER_DIR  = '/uploads/banner/';
     /** Raster MIME types are accepted everywhere. */
     private const RASTER_IMG_MIMES   = ['image/png', 'image/jpeg', 'image/webp'];
     /** SVG is accepted ONLY where explicitly enabled (logo), and always sanitized. */
@@ -426,12 +427,13 @@ final class AdminController
         AuthManager::requireRole('admin');
         Security::rotateCsrfHeader('admin');
         $rows = Database::select(
-            "SELECT id, exam_id, section, type, difficulty, weight,
+            "SELECT id, exam_id, parent_id, sub_label, section, type,
+                    difficulty, weight, max_points,
                     question_text, options, correct_answer,
-                    solution_text, video_url, created_at
+                    sample_answer, solution_text, video_url, created_at
              FROM questions
              WHERE exam_id = :id
-             ORDER BY id ASC",
+             ORDER BY COALESCE(parent_id, id) ASC, parent_id IS NULL DESC, id ASC",
             [':id' => $examId]
         );
         foreach ($rows as &$r) {
@@ -447,9 +449,10 @@ final class AdminController
         AuthManager::requireRole('admin');
         Security::rotateCsrfHeader('admin');
         $q = Database::selectOne(
-            "SELECT id, exam_id, section, type, difficulty, weight,
+            "SELECT id, exam_id, parent_id, sub_label, section, type,
+                    difficulty, weight, max_points,
                     question_text, options, correct_answer,
-                    solution_text, video_url
+                    sample_answer, solution_text, video_url
              FROM questions WHERE id = :id",
             [':id' => $id]
         );
@@ -467,14 +470,18 @@ final class AdminController
 
         $id            = (int)    ($b['id']            ?? 0);
         $examId        = (int)    ($b['exam_id']       ?? 0);
+        $parentId      = (int)    ($b['parent_id']     ?? 0);
+        $subLabel      = trim((string) ($b['sub_label'] ?? ''));
         $section       = trim((string) ($b['section']  ?? 'Umumiy'));
         $type          = (string) ($b['type']          ?? 'mcq');
-        $type          = in_array($type, ['mcq', 'open', 'matching'], true) ? $type : 'mcq';
+        $type          = in_array($type, ['mcq', 'open', 'matching', 'closed', 'combined'], true) ? $type : 'mcq';
         $difficulty    = max(1, min(5, (int) ($b['difficulty'] ?? 1)));
         $weight        = max(0.1, (float) ($b['weight'] ?? 1.0));
+        $maxPoints     = max(0.1, (float) ($b['max_points'] ?? 1.0));
         $questionText  = trim((string) ($b['question_text'] ?? ''));
         $solutionText  = trim((string) ($b['solution_text'] ?? ''));
         $videoUrl      = trim((string) ($b['video_url'] ?? ''));
+        $sampleAnswer  = trim((string) ($b['sample_answer'] ?? ''));
         $options       = $b['options']        ?? null;
         $correctAnswer = $b['correct_answer'] ?? null;
 
@@ -484,8 +491,16 @@ final class AdminController
         if ($questionText === '') {
             self::json(['error' => 'Savol matnini kiriting'], 422);
         }
-        if ($correctAnswer === null || $correctAnswer === '' || $correctAnswer === []) {
-            self::json(['error' => 'To\'g\'ri javobni kiriting'], 422);
+        // Combined parent doesn't need correct_answer (it's a context wrapper)
+        // Closed type: correct_answer is the sample answer reference
+        if ($type !== 'combined' &&
+            ($correctAnswer === null || $correctAnswer === '' || $correctAnswer === [])) {
+            // For closed, accept sample_answer as the reference
+            if ($type === 'closed' && $sampleAnswer !== '') {
+                $correctAnswer = $sampleAnswer;
+            } else {
+                self::json(['error' => 'To\'g\'ri javob yoki namunaviy javobni kiriting'], 422);
+            }
         }
         if ($videoUrl !== '' && !filter_var($videoUrl, FILTER_VALIDATE_URL)) {
             self::json(['error' => 'Video havolasi noto\'g\'ri'], 422);
@@ -555,7 +570,12 @@ final class AdminController
         if ($exam === null) self::json(['error' => 'Imtihon topilmadi'], 404);
 
         $optionsJson = $options !== null ? json_encode($options, JSON_UNESCAPED_UNICODE) : null;
-        $correctJson = json_encode($correctAnswer, JSON_UNESCAPED_UNICODE);
+        $correctJson = ($correctAnswer !== null && $correctAnswer !== '')
+            ? json_encode($correctAnswer, JSON_UNESCAPED_UNICODE)
+            : null;
+        $parentIdParam = $parentId > 0 ? $parentId : null;
+        $subLabelParam = $subLabel !== '' ? $subLabel : null;
+        $sampleAnswerParam = $sampleAnswer !== '' ? $sampleAnswer : null;
 
         if ($id > 0) {
             // Verify ownership of question
@@ -564,15 +584,18 @@ final class AdminController
 
             Database::execute(
                 "UPDATE questions
-                    SET exam_id = :e, section = :s, type = :t,
-                        difficulty = :d, weight = :w,
+                    SET exam_id = :e, parent_id = :pid, sub_label = :sl,
+                        section = :s, type = :t,
+                        difficulty = :d, weight = :w, max_points = :mp,
                         question_text = :qt, options = :opt, correct_answer = :ca,
-                        solution_text = :st, video_url = :vu
+                        sample_answer = :sa, solution_text = :st, video_url = :vu
                   WHERE id = :id",
                 [
-                    ':e' => $examId, ':s' => $section, ':t' => $type,
-                    ':d' => $difficulty, ':w' => $weight,
+                    ':e' => $examId, ':pid' => $parentIdParam, ':sl' => $subLabelParam,
+                    ':s' => $section, ':t' => $type,
+                    ':d' => $difficulty, ':w' => $weight, ':mp' => $maxPoints,
                     ':qt' => $questionText, ':opt' => $optionsJson, ':ca' => $correctJson,
+                    ':sa' => $sampleAnswerParam,
                     ':st' => $solutionText !== '' ? $solutionText : null,
                     ':vu' => $videoUrl     !== '' ? $videoUrl     : null,
                     ':id' => $id,
@@ -583,13 +606,15 @@ final class AdminController
 
         Database::execute(
             "INSERT INTO questions
-                (exam_id, section, type, difficulty, weight,
-                 question_text, options, correct_answer, solution_text, video_url)
-             VALUES (:e, :s, :t, :d, :w, :qt, :opt, :ca, :st, :vu)",
+                (exam_id, parent_id, sub_label, section, type, difficulty, weight, max_points,
+                 question_text, options, correct_answer, sample_answer, solution_text, video_url)
+             VALUES (:e, :pid, :sl, :s, :t, :d, :w, :mp, :qt, :opt, :ca, :sa, :st, :vu)",
             [
-                ':e' => $examId, ':s' => $section, ':t' => $type,
-                ':d' => $difficulty, ':w' => $weight,
+                ':e' => $examId, ':pid' => $parentIdParam, ':sl' => $subLabelParam,
+                ':s' => $section, ':t' => $type,
+                ':d' => $difficulty, ':w' => $weight, ':mp' => $maxPoints,
                 ':qt' => $questionText, ':opt' => $optionsJson, ':ca' => $correctJson,
+                ':sa' => $sampleAnswerParam,
                 ':st' => $solutionText !== '' ? $solutionText : null,
                 ':vu' => $videoUrl     !== '' ? $videoUrl     : null,
             ]
@@ -602,6 +627,72 @@ final class AdminController
         AuthManager::requireRole('admin');
         Security::requireCsrf('admin', false);
         Database::execute("DELETE FROM questions WHERE id = :id", [':id' => $id]);
+        self::json(['ok' => true]);
+    }
+
+    /* ============================================================
+     *  ANSWER REVIEWS  (closed/open type — admin tekshiradi)
+     * ============================================================ */
+
+    public function listReviews(): void
+    {
+        AuthManager::requireRole('admin');
+        Security::rotateCsrfHeader('admin');
+        $status = (string) ($_GET['status'] ?? 'pending');
+        $status = in_array($status, ['pending','approved','rejected'], true) ? $status : 'pending';
+
+        $rows = Database::select(
+            "SELECT r.id, r.user_exam_id, r.question_id, r.user_answer,
+                    r.auto_score, r.admin_score, r.status, r.note, r.created_at,
+                    q.question_text, q.sample_answer, q.max_points, q.section, q.type,
+                    u.fullname, u.phone,
+                    e.title AS exam_title
+             FROM user_answer_reviews r
+             JOIN questions q   ON q.id = r.question_id
+             JOIN user_exams ue ON ue.id = r.user_exam_id
+             JOIN users u       ON u.id = ue.user_id
+             JOIN exams e       ON e.id = ue.exam_id
+             WHERE r.status = :s
+             ORDER BY r.created_at DESC
+             LIMIT 100",
+            [':s' => $status]
+        );
+        self::json(['items' => $rows]);
+    }
+
+    public function reviewAnswer(int $reviewId): void
+    {
+        $admin = AuthManager::requireRole('admin');
+        Security::requireCsrf('admin', false);
+        $body = self::readJson();
+        $action = (string) ($body['action'] ?? '');
+        $score  = (float) ($body['score'] ?? 0);
+        $note   = mb_substr((string) ($body['note'] ?? ''), 0, 500);
+
+        if (!in_array($action, ['approve','reject'], true)) {
+            self::json(['error' => 'action: approve | reject'], 422);
+        }
+
+        $row = Database::selectOne(
+            "SELECT id, status FROM user_answer_reviews WHERE id = :id",
+            [':id' => $reviewId]
+        );
+        if ($row === null) self::json(['error' => 'Review topilmadi'], 404);
+        if ($row['status'] !== 'pending') self::json(['error' => 'Allaqachon ko\'rilgan'], 422);
+
+        Database::execute(
+            "UPDATE user_answer_reviews
+                SET status = :st, admin_score = :sc, note = :n,
+                    reviewed_by = :rb, reviewed_at = NOW()
+              WHERE id = :id",
+            [
+                ':st' => $action === 'approve' ? 'approved' : 'rejected',
+                ':sc' => max(0, $score),
+                ':n'  => $note ?: null,
+                ':rb' => (int) $admin['id'],
+                ':id' => $reviewId,
+            ]
+        );
         self::json(['ok' => true]);
     }
 
@@ -651,6 +742,38 @@ final class AdminController
         $path = self::storeImage($_FILES['logo'] ?? null, self::UPLOAD_LOGO_DIR, true);
         self::upsertSetting('site_logo', $path, (int) $admin['id']);
         self::json(['ok' => true, 'path' => $path]);
+    }
+
+    public function uploadBanner(): void
+    {
+        $admin = AuthManager::requireRole('admin');
+        Security::requireCsrf('admin', false);
+        $path = self::storeImage($_FILES['banner'] ?? null, self::UPLOAD_BANNER_DIR, false);
+        self::upsertSetting('site_banner', $path, (int) $admin['id']);
+        self::json(['ok' => true, 'path' => $path]);
+    }
+
+    public function deleteBanner(): void
+    {
+        $admin = AuthManager::requireRole('admin');
+        Security::requireCsrf('admin', false);
+        $cur = Database::selectOne("SELECT `value` FROM system_settings WHERE `key` = 'site_banner'");
+        if ($cur && !empty($cur['value'])) {
+            $abs = realpath(__DIR__ . '/../../public') . $cur['value'];
+            if (is_file($abs)) @unlink($abs);
+        }
+        self::upsertSetting('site_banner', '', (int) $admin['id']);
+        self::json(['ok' => true]);
+    }
+
+    public function updateAboutText(): void
+    {
+        $admin = AuthManager::requireRole('admin');
+        Security::requireCsrf('admin', false);
+        $body = self::readJson();
+        $text = trim((string) ($body['about_text'] ?? ''));
+        self::upsertSetting('about_text', $text, (int) $admin['id']);
+        self::json(['ok' => true]);
     }
 
     public function uploadSliderImage(): void
