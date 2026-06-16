@@ -1,0 +1,44 @@
+<?php
+use App\Core\Security;
+/** @var string $logo */
+/** @var string $platformName */
+/** @var string $currentPage */
+$nav = [
+    'home'     => ['/', 'Bosh sahifa'],
+    'tariffs'  => ['/tariffs', 'Tariflar'],
+    'blog'     => ['/blog', 'Blog'],
+    'about'    => ['/about', 'Tizim haqida'],
+    'contact'  => ['/contact', 'Aloqa'],
+];
+?>
+<header class="sticky top-0 z-30 bg-white/90 backdrop-blur-xl border-b border-sky-100">
+    <div class="max-w-7xl mx-auto flex items-center justify-between px-6 py-4">
+        <a href="/" class="flex items-center gap-3 group">
+            <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-sky-400 to-sky-600 flex items-center justify-center shadow-md shadow-sky-200 group-hover:scale-105 transition-transform">
+                <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+            </div>
+            <span class="text-base font-bold text-gray-900"><?= Security::e($platformName ?? 'Physics Cert') ?></span>
+        </a>
+        <nav class="hidden md:flex items-center gap-1">
+            <?php foreach ($nav as $key => [$url, $label]): ?>
+                <a href="<?= $url ?>" class="px-4 py-2 rounded-lg text-sm font-medium transition <?= ($currentPage ?? '') === $key ? 'bg-sky-50 text-sky-700' : 'text-gray-600 hover:bg-sky-50 hover:text-sky-600' ?>"><?= $label ?></a>
+            <?php endforeach; ?>
+        </nav>
+        <div class="flex items-center gap-2">
+            <a href="/auth" class="hidden sm:inline-block px-4 py-2 rounded-lg text-sm font-semibold text-sky-600 hover:bg-sky-50 transition">Kirish</a>
+            <a href="/auth?mode=register" class="px-5 py-2 rounded-lg text-sm font-bold text-white bg-gradient-to-br from-sky-400 to-sky-600 hover:shadow-lg hover:shadow-sky-200 transition">Boshlash</a>
+            <button id="mobNav" class="md:hidden p-2 text-gray-600">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/></svg>
+            </button>
+        </div>
+    </div>
+    <!-- Mobile menu -->
+    <div id="mobMenu" class="hidden md:hidden border-t border-sky-100 bg-white">
+        <div class="px-4 py-3 space-y-1">
+            <?php foreach ($nav as $key => [$url, $label]): ?>
+                <a href="<?= $url ?>" class="block px-4 py-2 rounded-lg text-sm font-medium <?= ($currentPage ?? '') === $key ? 'bg-sky-50 text-sky-700' : 'text-gray-600' ?>"><?= $label ?></a>
+            <?php endforeach; ?>
+        </div>
+    </div>
+</header>
+<script>document.getElementById('mobNav')?.addEventListener('click',()=>document.getElementById('mobMenu').classList.toggle('hidden'));</script>

@@ -699,6 +699,12 @@ final class AuthManager
 
     public static function normalizePhone(string $phone): string
     {
+        $phone = trim($phone);
+        // If input contains letters, treat it as a username — return as-is.
+        // This allows logging in with usernames like "admin".
+        if (preg_match('/[a-zA-Z]/', $phone)) {
+            return $phone;
+        }
         $digits = preg_replace('/\D+/', '', $phone) ?? '';
         if ($digits === '') return '';
         if (str_starts_with($digits, '998')) {

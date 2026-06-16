@@ -132,9 +132,9 @@ use App\Core\Security;
                         <input type="hidden" name="_csrf" value="<?= Security::eAttr($csrfLogin) ?>">
 
                         <div>
-                            <label class="block text-xs font-semibold text-gray-600 mb-1.5 uppercase tracking-wider">Telefon raqam</label>
-                            <input id="li_phone" name="phone" type="tel" class="input-field"
-                                   placeholder="+998 90 123 45 67" autocomplete="tel" required>
+                            <label class="block text-xs font-semibold text-gray-600 mb-1.5 uppercase tracking-wider">Login (telefon yoki username)</label>
+                            <input id="li_phone" name="phone" type="text" class="input-field"
+                                   placeholder="admin yoki +998 90 123 45 67" autocomplete="username" required>
                         </div>
 
                         <div>

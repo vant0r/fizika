@@ -88,16 +88,56 @@ final class HomeController
     public function about(): void
     {
         Security::securityHeaders();
-        $settingsRows = Database::select("SELECT `key`, `value` FROM system_settings");
-        $settings = [];
-        foreach ($settingsRows as $r) $settings[$r['key']] = $r['value'];
-
+        $settings = self::loadSettings();
         $logo         = (string) ($settings['site_logo']     ?? '/uploads/logo/default.png');
         $platformName = (string) ($settings['platform_name'] ?? 'Physics National Certificate');
-        $aboutText    = (string) ($settings['about_text']    ?? 'Physics National Certificate platformasi.');
+        $aboutText    = (string) ($settings['about_text']    ?? '');
         $botUsername  = (string) ($settings['bot_username']  ?? 'physics_cert_bot');
-
         require __DIR__ . '/../../views/about.phtml';
+    }
+
+    public function tariffs(): void
+    {
+        Security::securityHeaders();
+        $settings = self::loadSettings();
+        $logo         = (string) ($settings['site_logo']     ?? '/uploads/logo/default.png');
+        $platformName = (string) ($settings['platform_name'] ?? 'Physics National Certificate');
+        $botUsername  = (string) ($settings['bot_username']  ?? 'physics_cert_bot');
+        $tariffs = Database::select(
+            "SELECT id, name, price, mock_count, description FROM tariffs
+             WHERE is_active = 1 ORDER BY sort_order ASC, price ASC"
+        );
+        require __DIR__ . '/../../views/tariffs.phtml';
+    }
+
+    public function blog(): void
+    {
+        Security::securityHeaders();
+        $settings = self::loadSettings();
+        $logo         = (string) ($settings['site_logo']     ?? '/uploads/logo/default.png');
+        $platformName = (string) ($settings['platform_name'] ?? 'Physics National Certificate');
+        require __DIR__ . '/../../views/blog.phtml';
+    }
+
+    public function contact(): void
+    {
+        Security::securityHeaders();
+        $settings = self::loadSettings();
+        $logo         = (string) ($settings['site_logo']     ?? '/uploads/logo/default.png');
+        $platformName = (string) ($settings['platform_name'] ?? 'Physics National Certificate');
+        $contactEmail = (string) ($settings['contact_email'] ?? '');
+        $contactPhone = (string) ($settings['contact_phone'] ?? '');
+        $botUsername  = (string) ($settings['bot_username']  ?? 'physics_cert_bot');
+        require __DIR__ . '/../../views/contact.phtml';
+    }
+
+    /** @return array<string,string> */
+    private static function loadSettings(): array
+    {
+        $rows = Database::select("SELECT `key`, `value` FROM system_settings");
+        $out = [];
+        foreach ($rows as $r) $out[$r['key']] = $r['value'];
+        return $out;
     }
 
     /**

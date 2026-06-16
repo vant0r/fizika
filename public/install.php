@@ -1,176 +1,193 @@
 <?php
 /**
  * ============================================================
- *  PHYSICS CERT — ONE-CLICK INSTALLER
+ *  PHYSICS CERT — TO'LIQ INSTALLER (v2)
  * ============================================================
  *
- *  Bu faylni serverga yuklang va brauzerda oching:
- *    https://sizning-domen.uz/install.php
- *
- *  Nima qiladi:
- *    1. Domen nomini so'raydi (formada kiritasiz)
- *    2. Barcha papkalarni yaratadi (app/, bin/, database/, views/, public/uploads/...)
- *    3. .htaccess fayllarini to'g'ri joyiga yozadi
- *    4. .env faylini generatsiya qiladi (random APP_KEY, random TG_WEBHOOK_SECRET)
- *    5. Siz faqat DB va TG_BOT_TOKEN ni to'ldirasiz
- *    6. O'zini o'chiradi (xavfsizlik)
- *
- *  MUHIM: Bu fayl PUBLIC papkada turadi.
- *         Install tugagach, avtomatik o'chiriladi.
+ *  Bu installer:
+ *    1. Domen va DB ma'lumotlarini so'raydi
+ *    2. Mavjud DB jadvallarini DROP qiladi (toza boshlash)
+ *    3. Yangi jadvallarni yaratadi
+ *    4. Admin foydalanuvchini qo'shadi (admin / admin1234!)
+ *    5. Default tariflar va sozlamalarni qo'shadi
+ *    6. .env faylini yaratadi
+ *    7. .htaccess fayllar va papkalarni sozlaydi
+ *    8. O'zini o'chirish tugmasini ko'rsatadi
  * ============================================================
  */
 
-// Xavfsizlik: faqat birinchi marta ishlaydi
-if (file_exists(__DIR__ . '/../.env') && filesize(__DIR__ . '/../.env') > 50) {
-    http_response_code(403);
-    die('<h1>Already installed</h1><p>.env allaqachon mavjud. Qayta install qilish uchun .env ni o\'chiring.</p>');
-}
+// Re-install allowed: this version overwrites previous .env
 
 $rootDir = __DIR__;
-// If install.php is in public/ subfolder, go up one level
-// If it's in public_html/ (flat layout), stay in same dir
 if (basename($rootDir) === 'public' && is_dir(dirname($rootDir) . '/app')) {
     $rootDir = dirname($rootDir);
 }
-// x10hosting: everything is in public_html — rootDir = __DIR__
+
 $errors  = [];
 $success = false;
+$logs    = [];
 $domain  = '';
+$dbName  = '';
+$dbUser  = '';
+$tgToken = '';
+$appKey  = '';
+$webhookSecret = '';
+
 
 // ============================================================
 //  POST — Install jarayoni
 // ============================================================
-if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $domain       = trim($_POST['domain'] ?? '');
-    $dbHost       = trim($_POST['db_host'] ?? '127.0.0.1');
-    $dbPort       = trim($_POST['db_port'] ?? '3306');
-    $dbName       = trim($_POST['db_name'] ?? 'physics_cert');
-    $dbUser       = trim($_POST['db_user'] ?? 'root');
-    $dbPass       = $_POST['db_pass'] ?? '';
-    $tgToken      = trim($_POST['tg_token'] ?? '');
-    $smsProvider  = trim($_POST['sms_provider'] ?? 'log');
-    $eskizEmail   = trim($_POST['eskiz_email'] ?? '');
-    $eskizPass    = $_POST['eskiz_pass'] ?? '';
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_POST['self_delete'])) {
+    $domain     = trim($_POST['domain']     ?? '');
+    $dbHost     = trim($_POST['db_host']    ?? '127.0.0.1');
+    $dbPort     = trim($_POST['db_port']    ?? '3306');
+    $dbName     = trim($_POST['db_name']    ?? 'physics_cert');
+    $dbUser     = trim($_POST['db_user']    ?? 'root');
+    $dbPass     = $_POST['db_pass'] ?? '';
+    $tgToken    = trim($_POST['tg_token']   ?? '');
+    $adminLogin = trim($_POST['admin_login'] ?? 'admin');
+    $adminPass  = $_POST['admin_pass'] ?? 'admin1234!';
 
-    // Validatsiya
-    if ($domain === '') {
-        $errors[] = 'Domen nomini kiriting (masalan: fizika.uz yoki cert.example.com)';
-    }
-    if ($dbName === '') {
-        $errors[] = 'Ma\'lumotlar bazasi nomini kiriting';
-    }
+    if ($domain === '')      $errors[] = 'Domen kiriting';
+    if ($dbName === '')      $errors[] = 'DB nomini kiriting';
+    if ($adminLogin === '')  $errors[] = 'Admin login kiriting';
+    if (strlen($adminPass) < 6) $errors[] = 'Admin parol kamida 6 ta belgi';
 
     if (empty($errors)) {
-        // 1) Papkalar
+        // 1) Test DB connection
+        try {
+            $dsn = "mysql:host={$dbHost};port={$dbPort};dbname={$dbName};charset=utf8mb4";
+            $pdo = new PDO($dsn, $dbUser, $dbPass, [
+                PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
+                PDO::MYSQL_ATTR_INIT_COMMAND => "SET NAMES utf8mb4",
+            ]);
+            $logs[] = '✓ DB ulanishi muvaffaqiyatli';
+        } catch (PDOException $e) {
+            $errors[] = 'DB ulanish xatosi: ' . $e->getMessage();
+        }
+    }
+
+    if (empty($errors) && isset($pdo)) {
+        // 2) DROP existing tables (clean install)
+        try {
+            $pdo->exec("SET FOREIGN_KEY_CHECKS = 0");
+            $tables = [
+                'user_answer_reviews', 'notification_jobs', 'otp_challenges',
+                'tg_sessions', 'rate_limit_buckets', 'system_settings',
+                'questions', 'user_exams', 'payments', 'tariffs',
+                'exams', 'users'
+            ];
+            foreach ($tables as $t) {
+                $pdo->exec("DROP TABLE IF EXISTS `{$t}`");
+            }
+            $pdo->exec("SET FOREIGN_KEY_CHECKS = 1");
+            $logs[] = '✓ Eski jadvallar o\'chirildi';
+        } catch (PDOException $e) {
+            $errors[] = 'Jadvallarni o\'chirishda xato: ' . $e->getMessage();
+        }
+    }
+
+    if (empty($errors) && isset($pdo)) {
+        // 3) Create fresh tables
+        try {
+            createSchema($pdo);
+            $logs[] = '✓ Yangi jadvallar yaratildi (12 ta jadval)';
+        } catch (PDOException $e) {
+            $errors[] = 'Jadval yaratishda xato: ' . $e->getMessage();
+        }
+    }
+
+    if (empty($errors) && isset($pdo)) {
+        // 4) Create admin user
+        try {
+            $hash = password_hash($adminPass, PASSWORD_BCRYPT, ['cost' => 12]);
+            $stmt = $pdo->prepare(
+                "INSERT INTO users (fullname, phone, password, role, balance, mock_quota, is_active, created_at)
+                 VALUES ('Administrator', :login, :pw, 'admin', 0, 999, 1, NOW())"
+            );
+            $stmt->execute([':login' => $adminLogin, ':pw' => $hash]);
+            $logs[] = "✓ Admin foydalanuvchi yaratildi (login: {$adminLogin})";
+        } catch (PDOException $e) {
+            $errors[] = 'Admin yaratishda xato: ' . $e->getMessage();
+        }
+    }
+
+    if (empty($errors) && isset($pdo)) {
+        // 5) Insert default settings & tariffs
+        try {
+            seedDefaults($pdo, $domain);
+            $logs[] = '✓ Default sozlamalar va tariflar qo\'shildi';
+        } catch (PDOException $e) {
+            $errors[] = 'Defaults yozishda xato: ' . $e->getMessage();
+        }
+    }
+
+
+    if (empty($errors)) {
+        // 6) Create directories
         $dirs = [
-            $rootDir . '/app/Bot',
-            $rootDir . '/app/Config',
-            $rootDir . '/app/Controllers',
-            $rootDir . '/app/Core',
-            $rootDir . '/app/Queue/Handlers',
-            $rootDir . '/app/Sms',
-            $rootDir . '/bin',
-            $rootDir . '/database',
-            $rootDir . '/views',
+            $rootDir . '/app/Bot', $rootDir . '/app/Config', $rootDir . '/app/Controllers',
+            $rootDir . '/app/Core', $rootDir . '/app/Queue/Handlers', $rootDir . '/app/Sms',
+            $rootDir . '/bin', $rootDir . '/database', $rootDir . '/views',
             $rootDir . '/public/uploads/logo',
             $rootDir . '/public/uploads/slider',
             $rootDir . '/public/uploads/screenshots',
+            $rootDir . '/public/uploads/banner',
         ];
-        foreach ($dirs as $dir) {
-            if (!is_dir($dir)) {
-                if (!@mkdir($dir, 0755, true)) {
-                    $errors[] = "Papka yaratib bo'lmadi: $dir";
-                }
-            }
+        // For flat layout (x10hosting), uploads are in __DIR__/uploads
+        if ($rootDir === __DIR__) {
+            $dirs = array_merge($dirs, [
+                $rootDir . '/uploads/logo',
+                $rootDir . '/uploads/slider',
+                $rootDir . '/uploads/screenshots',
+                $rootDir . '/uploads/banner',
+            ]);
         }
+        foreach ($dirs as $dir) {
+            if (!is_dir($dir)) @mkdir($dir, 0775, true);
+        }
+        $logs[] = '✓ Papkalar yaratildi';
 
-        // 2) .gitkeep fayllar (uploads bo'sh qolmasligi uchun)
-        foreach (['logo', 'slider', 'screenshots'] as $sub) {
-            $gk = $rootDir . "/public/uploads/$sub/.gitkeep";
+        // 7) .gitkeep files
+        $uploadDir = is_dir($rootDir . '/public/uploads') ? $rootDir . '/public/uploads' : $rootDir . '/uploads';
+        foreach (['logo', 'slider', 'screenshots', 'banner'] as $sub) {
+            $gk = $uploadDir . "/{$sub}/.gitkeep";
             if (!file_exists($gk)) @file_put_contents($gk, '');
         }
 
-        // 3) uploads/.htaccess (PHP execution bloklash)
-        $uploadsHtaccess = $rootDir . '/public/uploads/.htaccess';
-        if (!file_exists($uploadsHtaccess)) {
-            @file_put_contents($uploadsHtaccess, <<<'HTACCESS'
-php_flag engine off
-Options -ExecCGI -Indexes
-AddType text/plain .php .php3 .php4 .php5 .phtml .phar .pht
-<FilesMatch "\.(php|php3|php4|php5|phtml|phar|pht)$">
-    Require all denied
-</FilesMatch>
-HTACCESS
-            );
-        }
-
-        // 4) Root .htaccess (public ga yo'naltirish)
-        $rootHtaccess = $rootDir . '/.htaccess';
-        if (!file_exists($rootHtaccess)) {
-            @file_put_contents($rootHtaccess, <<<'HTACCESS'
-RewriteEngine On
-RewriteRule ^(app|database|views|bin)(/|$) - [F,L]
-RewriteCond %{REQUEST_URI} !^/public/
-RewriteRule ^(.*)$ public/$1 [L]
-<FilesMatch "^(\.env|\.git|composer\.(json|lock)|.*\.sql|.*\.md|bootstrap\.php)$">
-    Require all denied
-</FilesMatch>
-HTACCESS
-            );
-        }
-
-        // 5) public/.htaccess (front-controller)
-        $pubHtaccess = $rootDir . '/public/.htaccess';
-        if (!file_exists($pubHtaccess)) {
-            $htContent = <<<HTACCESS
-RewriteEngine On
-
-# HTTPS redirect
-RewriteCond %{HTTPS} !=on
-RewriteCond %{HTTP:X-Forwarded-Proto} !=https
-RewriteRule ^ https://%{HTTP_HOST}%{REQUEST_URI} [R=301,L]
-
-# Existing files/dirs served as-is
-RewriteCond %{REQUEST_FILENAME} -f [OR]
-RewriteCond %{REQUEST_FILENAME} -d
-RewriteRule ^ - [L]
-
-# Everything else → index.php
-RewriteRule ^ index.php [QSA,L]
-
-<IfModule mod_headers.c>
-    Header always set X-Content-Type-Options "nosniff"
-    Header always set X-Frame-Options "SAMEORIGIN"
-    Header always set Referrer-Policy "strict-origin-when-cross-origin"
-    Header always set Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
-    Header unset Server
-    Header unset X-Powered-By
+        // 8) uploads/.htaccess
+        $htContent = <<<'HTACCESS'
+<IfModule mod_php.c>
+    php_flag engine off
 </IfModule>
-
-Options -Indexes
-DirectoryIndex index.php
+Options -ExecCGI -Indexes
+AddType text/plain .php .php3 .php4 .php5 .phtml .phar
+<FilesMatch "\.(php|phtml|phar)$">
+    <IfModule mod_authz_core.c>Require all denied</IfModule>
+    <IfModule !mod_authz_core.c>Order deny,allow
+Deny from all</IfModule>
+</FilesMatch>
 HTACCESS;
-            @file_put_contents($pubHtaccess, $htContent);
-        }
+        @file_put_contents($uploadDir . '/.htaccess', $htContent);
 
-        // 6) APP_KEY va TG_WEBHOOK_SECRET generatsiya
+        // 9) Generate APP_KEY and webhook secret
         $appKey       = bin2hex(random_bytes(32));
         $webhookSecret= bin2hex(random_bytes(32));
 
-        // 7) .env yozish
-        $dsn = "mysql:host={$dbHost};port={$dbPort};dbname={$dbName};charset=utf8mb4";
+        // 10) Write .env
+        $envDsn = "mysql:host={$dbHost};port={$dbPort};dbname={$dbName};charset=utf8mb4";
         $envContent = <<<ENV
 # =====================================================================
-# Physics National Certificate — Environment
-# Generated by install.php on {$domain}
+# Physics Cert — Generated by install.php on {$domain}
 # =====================================================================
 
 APP_ENV=production
 APP_TIMEZONE=Asia/Tashkent
 APP_KEY={$appKey}
+APP_DOMAIN={$domain}
 
 # Database
-DB_MASTER_DSN="{$dsn}"
+DB_MASTER_DSN="{$envDsn}"
 DB_MASTER_USER={$dbUser}
 DB_MASTER_PASS={$dbPass}
 DB_REPLICA_DSN=
@@ -181,47 +198,280 @@ DB_REPLICA_PASS=
 TG_BOT_TOKEN={$tgToken}
 TG_WEBHOOK_SECRET={$webhookSecret}
 
-# SMS (OTP)
-SMS_PROVIDER={$smsProvider}
-SMS_ESKIZ_EMAIL={$eskizEmail}
-SMS_ESKIZ_PASSWORD={$eskizPass}
+# SMS (kerak emas — log mode)
+SMS_PROVIDER=log
+SMS_PROVIDER_FORCE_LOG=1
+SMS_ESKIZ_EMAIL=
+SMS_ESKIZ_PASSWORD=
 SMS_FROM=4546
-SMS_PROVIDER_FORCE_LOG=
-
-# Domain (for reference)
-APP_DOMAIN={$domain}
 
 ENV;
         $envPath = $rootDir . '/.env';
-        if (@file_put_contents($envPath, $envContent, LOCK_EX) === false) {
-            $errors[] = '.env faylini yozib bo\'lmadi. Papka yozish huquqini tekshiring (chmod 755).';
+        if (@file_put_contents($envPath, $envContent, LOCK_EX) !== false) {
+            $logs[] = '✓ .env fayli yaratildi';
+        } else {
+            $errors[] = '.env yozib bo\'lmadi (chmod 755 papkaga)';
         }
+    }
 
-        // 8) Permissions
-        @chmod($rootDir . '/public/uploads', 0775);
-        @chmod($rootDir . '/public/uploads/logo', 0775);
-        @chmod($rootDir . '/public/uploads/slider', 0775);
-        @chmod($rootDir . '/public/uploads/screenshots', 0775);
-
-        if (empty($errors)) {
-            $success = true;
-        }
+    if (empty($errors)) {
+        $success = true;
     }
 }
 
+
 // ============================================================
-//  RENDER
+//  Self-delete
 // ============================================================
-$step = $success ? 'done' : 'form';
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['self_delete'])) {
+    $deleted = @unlink(__FILE__);
+    header('Content-Type: text/html; charset=utf-8');
+    echo '<!DOCTYPE html><html><head><title>install.php</title><script src="https://cdn.tailwindcss.com"></script></head><body class="bg-white">';
+    if ($deleted) {
+        echo '<div class="max-w-md mx-auto mt-20 p-8 text-center"><h2 class="text-2xl font-bold text-emerald-600">✓ install.php o\'chirildi</h2><p class="mt-3 text-gray-600">Endi <a href="/" class="text-sky-600 font-semibold underline">bosh sahifaga</a> o\'ting va <code class="bg-sky-50 px-2 py-1 rounded">admin</code> sifatida kiring.</p></div>';
+    } else {
+        echo '<div class="max-w-md mx-auto mt-20 p-8 text-center"><h2 class="text-2xl font-bold text-red-600">O\'chirib bo\'lmadi</h2><p class="mt-3 text-gray-600">Qo\'lda o\'chiring: <code class="bg-sky-50 px-2 py-1 rounded">install.php</code></p></div>';
+    }
+    echo '</body></html>';
+    exit;
+}
+
+// ============================================================
+//  HELPER FUNCTIONS
+// ============================================================
+function createSchema(PDO $pdo): void {
+    $sql = [];
+
+    $sql[] = "CREATE TABLE `users` (
+        `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+        `fullname` VARCHAR(150) NOT NULL,
+        `phone` VARCHAR(50) NOT NULL,
+        `password` VARCHAR(255) NOT NULL,
+        `role` ENUM('student','admin','moderator') NOT NULL DEFAULT 'student',
+        `tg_user_id` BIGINT UNSIGNED NULL DEFAULT NULL,
+        `balance` DECIMAL(12,2) NOT NULL DEFAULT 0.00,
+        `mock_quota` INT UNSIGNED NOT NULL DEFAULT 0,
+        `last_login_ip` VARBINARY(16) NULL,
+        `last_login_at` TIMESTAMP NULL,
+        `is_active` TINYINT(1) NOT NULL DEFAULT 1,
+        `totp_secret` VARCHAR(255) NULL,
+        `totp_enabled` TINYINT(1) NOT NULL DEFAULT 0,
+        `totp_recovery` TEXT NULL,
+        `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        `updated_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        PRIMARY KEY (`id`),
+        UNIQUE KEY `uniq_users_phone` (`phone`),
+        KEY `idx_users_role` (`role`),
+        KEY `idx_users_active` (`is_active`)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci";
+
+    $sql[] = "CREATE TABLE `exams` (
+        `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+        `title` VARCHAR(255) NOT NULL,
+        `subject` VARCHAR(100) NOT NULL DEFAULT 'Fizika',
+        `duration` INT UNSIGNED NOT NULL DEFAULT 120,
+        `total_qty` INT UNSIGNED NOT NULL DEFAULT 30,
+        `status` ENUM('draft','published','archived') NOT NULL DEFAULT 'draft',
+        `created_by` BIGINT UNSIGNED NULL,
+        `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        `updated_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        PRIMARY KEY (`id`),
+        KEY `idx_exams_status` (`status`)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci";
+
+    $sql[] = "CREATE TABLE `tariffs` (
+        `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+        `name` VARCHAR(120) NOT NULL,
+        `price` DECIMAL(12,2) NOT NULL,
+        `mock_count` INT UNSIGNED NOT NULL DEFAULT 1,
+        `description` TEXT NULL,
+        `is_active` TINYINT(1) NOT NULL DEFAULT 1,
+        `sort_order` INT NOT NULL DEFAULT 0,
+        `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        `updated_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        PRIMARY KEY (`id`)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci";
+
+    $sql[] = "CREATE TABLE `payments` (
+        `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+        `user_id` BIGINT UNSIGNED NOT NULL,
+        `tariff_id` BIGINT UNSIGNED NOT NULL,
+        `amount` DECIMAL(12,2) NOT NULL,
+        `screenshot_path` VARCHAR(500) NOT NULL,
+        `status` ENUM('pending','approved','rejected') NOT NULL DEFAULT 'pending',
+        `reviewed_by` BIGINT UNSIGNED NULL,
+        `reviewed_at` TIMESTAMP NULL,
+        `note` VARCHAR(500) NULL,
+        `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        PRIMARY KEY (`id`),
+        KEY `idx_pay_status` (`status`),
+        KEY `idx_pay_user` (`user_id`),
+        CONSTRAINT `fk_pay_user` FOREIGN KEY (`user_id`) REFERENCES `users`(`id`) ON DELETE CASCADE,
+        CONSTRAINT `fk_pay_tariff` FOREIGN KEY (`tariff_id`) REFERENCES `tariffs`(`id`) ON DELETE RESTRICT
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci";
+
+    $sql[] = "CREATE TABLE `user_exams` (
+        `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+        `user_id` BIGINT UNSIGNED NOT NULL,
+        `exam_id` BIGINT UNSIGNED NOT NULL,
+        `is_paid` TINYINT(1) NOT NULL DEFAULT 0,
+        `score` DECIMAL(6,2) NULL,
+        `correct_count` INT UNSIGNED NOT NULL DEFAULT 0,
+        `wrong_count` INT UNSIGNED NOT NULL DEFAULT 0,
+        `skipped_count` INT UNSIGNED NOT NULL DEFAULT 0,
+        `section_analysis` TEXT NULL,
+        `answers_snapshot` MEDIUMTEXT NULL,
+        `started_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        `finished_at` TIMESTAMP NULL,
+        `status` ENUM('in_progress','submitted','expired') NOT NULL DEFAULT 'in_progress',
+        PRIMARY KEY (`id`),
+        KEY `idx_uex_user` (`user_id`),
+        KEY `idx_uex_exam` (`exam_id`),
+        CONSTRAINT `fk_uex_user` FOREIGN KEY (`user_id`) REFERENCES `users`(`id`) ON DELETE CASCADE,
+        CONSTRAINT `fk_uex_exam` FOREIGN KEY (`exam_id`) REFERENCES `exams`(`id`) ON DELETE CASCADE
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci";
+
+    $sql[] = "CREATE TABLE `questions` (
+        `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+        `exam_id` BIGINT UNSIGNED NOT NULL,
+        `parent_id` BIGINT UNSIGNED NULL,
+        `sub_label` VARCHAR(20) NULL,
+        `section` VARCHAR(100) NOT NULL DEFAULT 'Umumiy',
+        `type` ENUM('mcq','open','matching','closed','combined') NOT NULL DEFAULT 'mcq',
+        `difficulty` TINYINT UNSIGNED NOT NULL DEFAULT 1,
+        `weight` DECIMAL(5,2) NOT NULL DEFAULT 1.00,
+        `max_points` DECIMAL(5,2) NOT NULL DEFAULT 1.00,
+        `question_text` MEDIUMTEXT NOT NULL,
+        `options` TEXT NULL,
+        `correct_answer` TEXT NULL,
+        `sample_answer` MEDIUMTEXT NULL,
+        `solution_text` MEDIUMTEXT NULL,
+        `video_url` VARCHAR(500) NULL,
+        `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        `updated_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        PRIMARY KEY (`id`),
+        KEY `idx_q_exam` (`exam_id`),
+        KEY `idx_q_parent` (`parent_id`),
+        CONSTRAINT `fk_q_exam` FOREIGN KEY (`exam_id`) REFERENCES `exams`(`id`) ON DELETE CASCADE,
+        CONSTRAINT `fk_q_parent` FOREIGN KEY (`parent_id`) REFERENCES `questions`(`id`) ON DELETE CASCADE
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci";
+
+    $sql[] = "CREATE TABLE `system_settings` (
+        `key` VARCHAR(120) NOT NULL,
+        `value` TEXT NULL,
+        `updated_by` BIGINT UNSIGNED NULL,
+        `updated_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        PRIMARY KEY (`key`)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci";
+
+    $sql[] = "CREATE TABLE `rate_limit_buckets` (
+        `bucket_key` VARCHAR(190) NOT NULL,
+        `hits` INT UNSIGNED NOT NULL DEFAULT 0,
+        `expires_at` INT UNSIGNED NOT NULL,
+        PRIMARY KEY (`bucket_key`),
+        KEY `idx_rl_expires` (`expires_at`)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4";
+
+    $sql[] = "CREATE TABLE `tg_sessions` (
+        `tg_user_id` BIGINT UNSIGNED NOT NULL,
+        `state` VARCHAR(60) NOT NULL DEFAULT 'idle',
+        `payload` TEXT NULL,
+        `updated_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        PRIMARY KEY (`tg_user_id`)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4";
+
+    $sql[] = "CREATE TABLE `otp_challenges` (
+        `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+        `phone` VARCHAR(50) NOT NULL,
+        `code_hash` CHAR(64) NOT NULL,
+        `purpose` VARCHAR(40) NOT NULL DEFAULT 'register',
+        `payload` TEXT NULL,
+        `attempts` TINYINT UNSIGNED NOT NULL DEFAULT 0,
+        `max_attempts` TINYINT UNSIGNED NOT NULL DEFAULT 5,
+        `consumed_at` TIMESTAMP NULL,
+        `expires_at` TIMESTAMP NOT NULL,
+        `ip` VARCHAR(45) NULL,
+        `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        PRIMARY KEY (`id`),
+        KEY `idx_otp_phone` (`phone`),
+        KEY `idx_otp_expires` (`expires_at`)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci";
+
+    $sql[] = "CREATE TABLE `notification_jobs` (
+        `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+        `job_type` VARCHAR(50) NOT NULL,
+        `payload` TEXT NOT NULL,
+        `status` ENUM('pending','processing','sent','failed') NOT NULL DEFAULT 'pending',
+        `attempts` TINYINT UNSIGNED NOT NULL DEFAULT 0,
+        `max_attempts` TINYINT UNSIGNED NOT NULL DEFAULT 5,
+        `available_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        `locked_at` TIMESTAMP NULL,
+        `locked_by` VARCHAR(64) NULL,
+        `last_error` TEXT NULL,
+        `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        `updated_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        PRIMARY KEY (`id`),
+        KEY `idx_jobs_status_avail` (`status`, `available_at`)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci";
+
+    $sql[] = "CREATE TABLE `user_answer_reviews` (
+        `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+        `user_exam_id` BIGINT UNSIGNED NOT NULL,
+        `question_id` BIGINT UNSIGNED NOT NULL,
+        `user_answer` MEDIUMTEXT NULL,
+        `auto_score` DECIMAL(5,2) NULL,
+        `admin_score` DECIMAL(5,2) NULL,
+        `status` ENUM('pending','approved','rejected') NOT NULL DEFAULT 'pending',
+        `reviewed_by` BIGINT UNSIGNED NULL,
+        `reviewed_at` TIMESTAMP NULL,
+        `note` VARCHAR(500) NULL,
+        `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        PRIMARY KEY (`id`),
+        KEY `idx_uar_status` (`status`),
+        CONSTRAINT `fk_uar_userexam` FOREIGN KEY (`user_exam_id`) REFERENCES `user_exams`(`id`) ON DELETE CASCADE,
+        CONSTRAINT `fk_uar_question` FOREIGN KEY (`question_id`) REFERENCES `questions`(`id`) ON DELETE CASCADE
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci";
+
+    foreach ($sql as $stmt) {
+        $pdo->exec($stmt);
+    }
+}
+
+function seedDefaults(PDO $pdo, string $domain): void {
+    $stmt = $pdo->prepare("INSERT INTO system_settings (`key`, `value`) VALUES (?, ?)");
+    $defaults = [
+        ['site_logo',     '/uploads/logo/default.png'],
+        ['site_banner',   ''],
+        ['slider_images', '[]'],
+        ['humo_card',     '9860 0101 0000 0000'],
+        ['visa_card',     '4000 0000 0000 0000'],
+        ['card_holder',   'PHYSICS CERT LLC'],
+        ['bot_username',  'physics_cert_bot'],
+        ['platform_name', 'Physics National Certificate'],
+        ['about_text',    'Physics Cert — Fizika fanidan Milliy Sertifikat olishga professional tarzda tayyorlovchi platforma. BMBA metodologiyasi, virtual qoralama, MathJax formulalar va Telegram bot orqali oson to\'lov tizimi.'],
+        ['contact_email', 'info@' . $domain],
+        ['contact_phone', '+998 90 000 00 00'],
+    ];
+    foreach ($defaults as $row) $stmt->execute($row);
+
+    $stmt = $pdo->prepare(
+        "INSERT INTO tariffs (name, price, mock_count, description, sort_order)
+         VALUES (?, ?, ?, ?, ?)"
+    );
+    $stmt->execute(['Boshlang\'ich', 49000, 3, '3 ta to\'liq mock imtihon', 1]);
+    $stmt->execute(['Standart', 129000, 10, '10 ta mock + bo\'limlar tahlili', 2]);
+    $stmt->execute(['PRO', 249000, 30, '30 ta mock + video yechimlar + ustuvor qo\'llab-quvvatlash', 3]);
+}
+
+
 ?>
 <!DOCTYPE html>
 <html lang="uz">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Install — Physics National Certificate</title>
+    <title>Install — Physics Cert</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <script>tailwind.config={theme:{extend:{colors:{sky:{50:'#f0f9ff',100:'#e0f2fe',200:'#bae6fd',300:'#7dd3fc',400:'#38bdf8',500:'#0ea5e9',600:'#0284c7',700:'#0369a1',800:'#075985',900:'#0c4a6e'}}}}}</script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
     <style>
         body{font-family:'Inter',sans-serif;background:#fafbfc;}
@@ -230,141 +480,127 @@ $step = $success ? 'done' : 'form';
         .btn-p{background:linear-gradient(135deg,#0ea5e9,#0284c7);color:#fff;border:none;border-radius:10px;padding:.7rem 1.3rem;font-weight:700;font-size:.85rem;cursor:pointer;transition:all .15s;display:inline-block;text-decoration:none;}
         .btn-p:hover{transform:translateY(-1px);box-shadow:0 6px 18px rgba(14,165,233,.25);}
         .btn-d{background:linear-gradient(135deg,#dc2626,#991b1b);color:#fff;border:none;border-radius:10px;padding:.7rem 1.3rem;font-weight:700;font-size:.85rem;cursor:pointer;transition:all .15s;}
-        .btn-d:hover{box-shadow:0 6px 18px rgba(220,38,38,.25);}
         .input-f{border:1.5px solid #e0f2fe;border-radius:10px;padding:.6rem .8rem;width:100%;outline:none;transition:all .15s;font-size:.85rem;background:#fff;}
         .input-f:focus{border-color:#0ea5e9;box-shadow:0 0 0 3px rgba(14,165,233,.08);}
         .field{display:flex;flex-direction:column;gap:.3rem;}
         .field label{font-size:10px;text-transform:uppercase;letter-spacing:.06em;font-weight:600;color:#64748b;}
-        .check{display:flex;align-items:center;gap:.5rem;font-size:.85rem;font-weight:500;color:#166534;}
-        .check::before{content:'';display:inline-block;width:18px;height:18px;border-radius:50%;background:#dcfce7;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20' fill='%23166534'%3E%3Cpath fill-rule='evenodd' d='M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z' clip-rule='evenodd'/%3E%3C/svg%3E");background-size:12px;background-position:center;background-repeat:no-repeat;}
     </style>
 </head>
 <body class="min-h-screen flex items-center justify-center px-4 py-10">
 <div class="w-full max-w-2xl">
 
-    <!-- Header -->
     <div class="mb-8 text-center">
         <div class="w-14 h-14 mx-auto rounded-2xl bg-gradient-to-br from-sky-400 to-sky-600 flex items-center justify-center shadow-lg shadow-sky-200 mb-4">
             <svg class="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
         </div>
         <h1 class="text-3xl font-black text-gray-900">Physics Cert</h1>
-        <p class="text-sm text-gray-500 mt-1">Milliy Sertifikat Platformasi — O'rnatish</p>
+        <p class="text-sm text-gray-500 mt-1">To'liq o'rnatish</p>
     </div>
 
-    <?php if ($step === 'done'): ?>
-    <!-- ============ SUCCESS ============ -->
+    <?php if ($success): ?>
     <div class="card p-8">
         <div class="flex items-center gap-3 mb-5">
-            <div class="w-10 h-10 rounded-xl bg-emerald-50 flex items-center justify-center">
-                <svg class="w-5 h-5 text-emerald-600" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/></svg>
+            <div class="w-12 h-12 rounded-xl bg-emerald-50 flex items-center justify-center">
+                <svg class="w-6 h-6 text-emerald-600" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/></svg>
             </div>
-            <h2 class="text-xl font-bold text-gray-900">Muvaffaqiyatli o'rnatildi!</h2>
+            <div>
+                <h2 class="text-xl font-bold text-gray-900">Muvaffaqiyatli o'rnatildi!</h2>
+                <p class="text-xs text-gray-500">Tizim ishga tayyor</p>
+            </div>
         </div>
 
-        <div class="space-y-2 mb-6">
-            <p class="check">Papkalar yaratildi</p>
-            <p class="check">.htaccess fayllar joyiga qo'yildi</p>
-            <p class="check">.env generatsiya qilindi (APP_KEY: random 64 hex)</p>
-            <p class="check">uploads/ papka ruxsatlari sozlandi</p>
+        <div class="space-y-2 mb-6 bg-emerald-50 rounded-xl p-4">
+            <?php foreach ($logs as $log): ?>
+                <p class="text-sm text-emerald-800"><?= htmlspecialchars($log) ?></p>
+            <?php endforeach; ?>
         </div>
 
-        <div class="bg-sky-50 rounded-xl p-5 text-sm space-y-3 mb-6">
-            <div class="text-xs font-bold text-sky-700 uppercase tracking-wider mb-2">Keyingi qadamlar</div>
-            <ol class="list-decimal list-inside space-y-2 text-gray-700">
-                <li>Ma'lumotlar bazasini import qiling:<br>
-                    <code class="inline-block mt-1 bg-white border border-sky-200 rounded-lg px-3 py-1.5 text-xs">mysql -u <?= htmlspecialchars($dbUser) ?> -p <?= htmlspecialchars($dbName) ?> &lt; database/schema.sql</code>
-                </li>
-                <li>PHP fayllarni yuklang (app/, bin/, views/, public/index.php, bootstrap.php)</li>
-                <li>Telegram webhook:<br>
-                    <code class="inline-block mt-1 bg-white border border-sky-200 rounded-lg px-3 py-1.5 text-xs break-all">curl -X POST "https://api.telegram.org/bot<?= htmlspecialchars($tgToken ?: 'TOKEN') ?>/setWebhook" -d "url=https://<?= htmlspecialchars($domain) ?>/api/bot/webhook" -d "secret_token=<?= htmlspecialchars($webhookSecret ?? '') ?>"</code>
-                </li>
-                <li>Admin:<br><code class="inline-block mt-1 bg-white border border-sky-200 rounded-lg px-3 py-1.5 text-xs">UPDATE users SET role='admin' WHERE phone='+998XXXXXXXXX';</code></li>
-                <li class="text-red-600 font-semibold">Bu install.php ni o'chiring!</li>
-            </ol>
+        <div class="bg-sky-50 rounded-xl p-5 mb-6 border border-sky-100">
+            <div class="text-xs font-bold text-sky-700 uppercase tracking-wider mb-3">Admin kirish ma'lumoti</div>
+            <div class="space-y-2 text-sm">
+                <div><strong class="text-gray-700">Login:</strong> <code class="bg-white px-2 py-0.5 rounded border border-sky-200"><?= htmlspecialchars($_POST['admin_login'] ?? 'admin') ?></code></div>
+                <div><strong class="text-gray-700">Parol:</strong> <code class="bg-white px-2 py-0.5 rounded border border-sky-200"><?= htmlspecialchars($_POST['admin_pass'] ?? 'admin1234!') ?></code></div>
+                <div><strong class="text-gray-700">Sayt:</strong> <a href="https://<?= htmlspecialchars($domain) ?>" class="text-sky-600 underline">https://<?= htmlspecialchars($domain) ?></a></div>
+            </div>
         </div>
 
-        <div class="bg-gray-50 rounded-xl p-4 text-xs text-gray-600 space-y-1 mb-6">
-            <div><strong>Domen:</strong> https://<?= htmlspecialchars($domain) ?></div>
-            <div><strong>APP_KEY:</strong> <code class="text-sky-700"><?= htmlspecialchars($appKey ?? '—') ?></code></div>
-            <div><strong>WEBHOOK_SECRET:</strong> <code class="text-sky-700"><?= htmlspecialchars($webhookSecret ?? '—') ?></code></div>
+        <div class="bg-amber-50 rounded-xl p-4 mb-6 border border-amber-200">
+            <p class="text-sm text-amber-800">
+                <strong>⚠️ MUHIM:</strong> install.php ni HOZIROQ o'chiring. Aks holda kimdir DB ni qaytadan o'rnatib, ma'lumotlarni o'chirib yuborishi mumkin.
+            </p>
         </div>
 
         <div class="flex items-center gap-3">
-            <a href="https://<?= htmlspecialchars($domain) ?>/" class="btn-p">Saytga o'tish →</a>
-            <form method="POST" action="" style="display:inline;">
+            <a href="/auth" class="btn-p flex-1 text-center">Saytga o'tish →</a>
+            <form method="POST" style="display:inline;">
                 <input type="hidden" name="self_delete" value="1">
                 <button type="submit" class="btn-d">install.php o'chirish</button>
             </form>
         </div>
     </div>
-
-    <?php elseif (isset($_POST['self_delete'])): ?>
-        <?php
-            @unlink(__FILE__);
-            if (!file_exists(__FILE__)) {
-                echo '<div class="card p-8 text-center"><div class="w-12 h-12 mx-auto rounded-xl bg-emerald-50 flex items-center justify-center mb-3"><svg class="w-6 h-6 text-emerald-600" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/></svg></div><h2 class="text-lg font-bold text-gray-900">install.php o\'chirildi</h2><p class="text-sm text-gray-500 mt-2"><a href="/" class="text-sky-600 font-medium hover:underline">Bosh sahifaga o\'ting →</a></p></div>';
-            } else {
-                echo '<div class="card p-8 text-center"><h2 class="text-lg font-bold text-red-600">O\'chirib bo\'lmadi</h2><p class="text-sm text-gray-500 mt-2">Qo\'lda: <code class="bg-sky-50 px-2 py-0.5 rounded text-xs">rm public/install.php</code></p></div>';
-            }
-        ?>
-
     <?php else: ?>
-    <!-- ============ FORM ============ -->
+
     <?php if (!empty($errors)): ?>
         <div class="bg-red-50 border border-red-100 rounded-xl p-4 mb-6">
             <div class="text-xs font-bold text-red-700 uppercase tracking-wider mb-2">Xatolar</div>
             <ul class="list-disc list-inside text-sm text-red-700 space-y-1">
-                <?php foreach ($errors as $err): ?>
-                    <li><?= htmlspecialchars($err) ?></li>
-                <?php endforeach; ?>
+                <?php foreach ($errors as $err): ?><li><?= htmlspecialchars($err) ?></li><?php endforeach; ?>
+            </ul>
+        </div>
+    <?php endif; ?>
+
+    <?php if (!empty($logs)): ?>
+        <div class="bg-emerald-50 border border-emerald-100 rounded-xl p-4 mb-6">
+            <div class="text-xs font-bold text-emerald-700 uppercase tracking-wider mb-2">Bajarildi</div>
+            <ul class="text-sm text-emerald-700 space-y-1">
+                <?php foreach ($logs as $log): ?><li><?= htmlspecialchars($log) ?></li><?php endforeach; ?>
             </ul>
         </div>
     <?php endif; ?>
 
     <form method="POST" class="card overflow-hidden">
-        <!-- Step 1 -->
         <div class="px-6 py-4 bg-sky-50/50 border-b border-sky-100">
-            <div class="text-[10px] text-sky-600 font-bold uppercase tracking-wider">Qadam 1</div>
-            <h2 class="text-base font-bold text-gray-900 mt-0.5">Domen sozlamalari</h2>
+            <h2 class="text-base font-bold text-gray-900">1. Domen</h2>
         </div>
         <div class="p-6">
             <div class="field">
-                <label>Domen nomi *</label>
-                <input type="text" name="domain" class="input-f" value="<?= htmlspecialchars($domain ?: ($_SERVER['HTTP_HOST'] ?? '')) ?>"
-                       placeholder="fizika.uz yoki cert.example.com" required autofocus>
-                <span class="text-[10px] text-gray-400">https:// avtomatik. SSL sertifikat sozlangan bo'lishi kerak.</span>
+                <label>Domen</label>
+                <input type="text" name="domain" class="input-f" value="<?= htmlspecialchars($domain ?: ($_SERVER['HTTP_HOST'] ?? '')) ?>" required autofocus>
             </div>
         </div>
 
-        <!-- Step 2 -->
         <div class="px-6 py-4 bg-sky-50/50 border-y border-sky-100">
-            <div class="text-[10px] text-sky-600 font-bold uppercase tracking-wider">Qadam 2</div>
-            <h2 class="text-base font-bold text-gray-900 mt-0.5">Ma'lumotlar bazasi</h2>
+            <h2 class="text-base font-bold text-gray-900">2. Ma'lumotlar bazasi</h2>
+            <p class="text-xs text-amber-600 mt-1">⚠️ Mavjud jadvallar O'CHIRILADI va yangidan yaratiladi</p>
         </div>
         <div class="p-6 grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div class="field"><label>DB Host</label><input type="text" name="db_host" class="input-f" value="127.0.0.1"></div>
-            <div class="field"><label>DB Port</label><input type="text" name="db_port" class="input-f" value="3306"></div>
-            <div class="field"><label>DB Nomi *</label><input type="text" name="db_name" class="input-f" value="physics_cert" required></div>
-            <div class="field"><label>DB User</label><input type="text" name="db_user" class="input-f" value="root"></div>
-            <div class="field md:col-span-2"><label>DB Parol</label><input type="password" name="db_pass" class="input-f" placeholder="(bo'sh bo'lishi mumkin)"></div>
+            <div class="field"><label>DB Host</label><input type="text" name="db_host" class="input-f" value="<?= htmlspecialchars($_POST['db_host'] ?? 'localhost') ?>"></div>
+            <div class="field"><label>DB Port</label><input type="text" name="db_port" class="input-f" value="<?= htmlspecialchars($_POST['db_port'] ?? '3306') ?>"></div>
+            <div class="field"><label>DB Nomi</label><input type="text" name="db_name" class="input-f" value="<?= htmlspecialchars($_POST['db_name'] ?? '') ?>" required></div>
+            <div class="field"><label>DB User</label><input type="text" name="db_user" class="input-f" value="<?= htmlspecialchars($_POST['db_user'] ?? '') ?>"></div>
+            <div class="field md:col-span-2"><label>DB Parol</label><input type="password" name="db_pass" class="input-f" value="<?= htmlspecialchars($_POST['db_pass'] ?? '') ?>"></div>
         </div>
 
-        <!-- Step 3 -->
         <div class="px-6 py-4 bg-sky-50/50 border-y border-sky-100">
-            <div class="text-[10px] text-sky-600 font-bold uppercase tracking-wider">Qadam 3</div>
-            <h2 class="text-base font-bold text-gray-900 mt-0.5">Telegram &amp; SMS</h2>
+            <h2 class="text-base font-bold text-gray-900">3. Admin foydalanuvchi</h2>
         </div>
-        <div class="p-6 space-y-4">
-            <div class="field"><label>Telegram Bot Token</label><input type="text" name="tg_token" class="input-f" placeholder="123456789:ABCdefGHI (BotFather'dan)"><span class="text-[10px] text-gray-400">Keyinroq .env da to'ldirsangiz ham bo'ladi.</span></div>
-            <div class="field"><label>SMS Provider</label><select name="sms_provider" class="input-f"><option value="log">Log (dev — kodlar logga yoziladi)</option><option value="eskiz">Eskiz.uz (production)</option></select></div>
-            <div class="field"><label>Eskiz Email</label><input type="text" name="eskiz_email" class="input-f" placeholder="admin@example.com"></div>
-            <div class="field"><label>Eskiz Password</label><input type="password" name="eskiz_pass" class="input-f"></div>
+        <div class="p-6 grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div class="field"><label>Admin login</label><input type="text" name="admin_login" class="input-f" value="<?= htmlspecialchars($_POST['admin_login'] ?? 'admin') ?>" required></div>
+            <div class="field"><label>Admin parol</label><input type="text" name="admin_pass" class="input-f" value="<?= htmlspecialchars($_POST['admin_pass'] ?? 'admin1234!') ?>" required></div>
         </div>
 
-        <!-- Submit -->
+        <div class="px-6 py-4 bg-sky-50/50 border-y border-sky-100">
+            <h2 class="text-base font-bold text-gray-900">4. Telegram (ixtiyoriy)</h2>
+        </div>
+        <div class="p-6">
+            <div class="field"><label>Bot Token</label><input type="text" name="tg_token" class="input-f" value="<?= htmlspecialchars($_POST['tg_token'] ?? '') ?>" placeholder="Keyinroq .env da ham qo'shsa bo'ladi"></div>
+        </div>
+
         <div class="p-6 border-t border-sky-100">
-            <button type="submit" class="btn-p w-full text-center py-4 text-base">O'rnatish →</button>
-            <p class="text-center text-[10px] text-gray-400 mt-3">APP_KEY va TG_WEBHOOK_SECRET avtomatik generatsiya qilinadi</p>
+            <button type="submit" class="btn-p w-full text-center py-4 text-base">
+                ⚡ To'liq o'rnatish
+            </button>
+            <p class="text-center text-[10px] text-gray-400 mt-3">Eski jadvallar o'chiriladi va yangisi yaratiladi</p>
         </div>
     </form>
     <?php endif; ?>

@@ -1,0 +1,88 @@
+<?php
+use App\Core\Security;
+/** @var string $logo */
+/** @var string $platformName */
+/** @var array<int,array<string,mixed>> $tariffs */
+/** @var string $botUsername */
+$currentPage = 'tariffs';
+?><!DOCTYPE html>
+<html lang="uz">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tariflar — <?= Security::e($platformName) ?></title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <style>
+        body{font-family:'Inter',sans-serif;background:#fff;}
+        ::selection{background:#0ea5e9;color:#fff;}
+        .price-card{border:1px solid #e0f2fe;border-radius:20px;padding:2rem;background:#fff;transition:all .25s;position:relative;overflow:hidden;}
+        .price-card:hover{transform:translateY(-6px);box-shadow:0 20px 40px rgba(14,165,233,.12);border-color:#7dd3fc;}
+        .price-card.featured{background:linear-gradient(135deg,#0ea5e9,#0369a1);color:#fff;border:none;transform:scale(1.05);}
+        .price-card.featured::before{content:'';position:absolute;inset:0;background:radial-gradient(circle at top right, rgba(255,255,255,.15), transparent 60%);pointer-events:none;}
+        .price-card.featured .feat-icon{color:#fff;background:rgba(255,255,255,.2);}
+        .feat-icon{width:20px;height:20px;border-radius:50%;background:#dcfce7;color:#166534;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;font-size:11px;font-weight:700;}
+        .btn-p{background:linear-gradient(135deg,#0ea5e9,#0284c7);color:#fff;border:none;border-radius:12px;padding:.85rem 1.8rem;font-weight:700;cursor:pointer;transition:all .2s;display:inline-block;text-decoration:none;font-size:.9rem;}
+        .btn-p:hover{transform:translateY(-2px);box-shadow:0 8px 25px rgba(14,165,233,.3);}
+        .btn-w{background:#fff;color:#0284c7;border:none;border-radius:12px;padding:.85rem 1.8rem;font-weight:700;cursor:pointer;transition:all .2s;display:inline-block;text-decoration:none;font-size:.9rem;}
+        .btn-w:hover{transform:translateY(-2px);box-shadow:0 8px 25px rgba(0,0,0,.15);}
+    </style>
+</head>
+<body>
+<?php require __DIR__ . '/_header.phtml'; ?>
+
+<section class="bg-gradient-to-b from-sky-50/50 to-white py-16 lg:py-24">
+    <div class="max-w-7xl mx-auto px-6 text-center">
+        <div class="inline-flex items-center gap-2 bg-sky-100 text-sky-700 text-xs font-bold px-3 py-1.5 rounded-full mb-4">
+            <svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20"><path d="M5 5a3 3 0 015-2.236A3 3 0 0114.83 6H16a2 2 0 110 4h-5V9a1 1 0 10-2 0v1H4a2 2 0 110-4h1.17A3 3 0 015 5zm4 1V5a1 1 0 10-1 1h1zm3 0a1 1 0 10-1-1v1h1z"/></svg>
+            Tariflar va to'lov
+        </div>
+        <h1 class="text-4xl md:text-5xl lg:text-6xl font-black text-gray-900 leading-tight">Sizga mos rejani tanlang</h1>
+        <p class="mt-4 text-lg text-gray-600 max-w-2xl mx-auto">Bir martalik to'lov — qo'shimcha to'lovlar yo'q. Telegram bot orqali HUMO yoki VISA karta bilan to'lov qiling.</p>
+    </div>
+</section>
+
+<section class="max-w-7xl mx-auto px-6 -mt-8 pb-20">
+    <?php if (empty($tariffs)): ?>
+        <div class="border border-sky-100 rounded-2xl p-12 text-center text-gray-400">Tariflar tez orada e'lon qilinadi</div>
+    <?php else: ?>
+        <?php $featuredIdx = (count($tariffs) >= 3) ? 1 : -1; ?>
+        <div class="grid grid-cols-1 md:grid-cols-<?= min(3, count($tariffs)) ?> gap-6 max-w-5xl mx-auto">
+            <?php foreach ($tariffs as $i => $t): $isFeatured = ($i === $featuredIdx); ?>
+            <div class="price-card <?= $isFeatured ? 'featured' : '' ?> flex flex-col">
+                <?php if ($isFeatured): ?>
+                    <div class="absolute top-4 right-4 bg-white/20 backdrop-blur text-xs font-bold px-3 py-1 rounded-full">⭐ Mashhur</div>
+                <?php endif; ?>
+                <div class="text-xs font-bold uppercase tracking-wider <?= $isFeatured ? 'text-sky-100' : 'text-sky-500' ?>"><?= $isFeatured ? 'Tarif' : 'Tarif' ?></div>
+                <h3 class="text-2xl font-bold mt-2"><?= Security::e((string)$t['name']) ?></h3>
+                <div class="mt-4 flex items-baseline gap-1">
+                    <span class="text-5xl font-black"><?= number_format((float)$t['price'], 0, '.', ' ') ?></span>
+                    <span class="text-sm opacity-70">so'm</span>
+                </div>
+                <ul class="mt-6 space-y-3 text-sm flex-1 <?= $isFeatured ? 'text-sky-50' : 'text-gray-700' ?>">
+                    <li class="flex items-start gap-3"><span class="feat-icon">✓</span> <strong><?= (int)$t['mock_count'] ?> ta</strong> mock imtihon</li>
+                    <li class="flex items-start gap-3"><span class="feat-icon">✓</span> BMBA bo'yicha avtomatik baholash</li>
+                    <li class="flex items-start gap-3"><span class="feat-icon">✓</span> Bo'limlar bo'yicha tahlil</li>
+                    <li class="flex items-start gap-3"><span class="feat-icon">✓</span> Virtual qoralama (HTML5 Canvas)</li>
+                    <li class="flex items-start gap-3"><span class="feat-icon">✓</span> LaTeX/MathJax formulalar</li>
+                    <?php if (!empty($t['description'])): ?>
+                        <li class="flex items-start gap-3 <?= $isFeatured ? 'opacity-90' : 'text-gray-500' ?>"><span class="feat-icon">★</span> <?= Security::e((string)$t['description']) ?></li>
+                    <?php endif; ?>
+                </ul>
+                <a href="/auth?mode=register" class="<?= $isFeatured ? 'btn-w' : 'btn-p' ?> mt-6 text-center block">Tanlash →</a>
+            </div>
+            <?php endforeach; ?>
+        </div>
+    <?php endif; ?>
+
+    <div class="mt-16 text-center">
+        <div class="inline-flex items-center gap-2 text-sm text-gray-500 bg-sky-50 rounded-full px-4 py-2">
+            <svg class="w-4 h-4 text-sky-500" fill="currentColor" viewBox="0 0 24 24"><path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm5.562 8.161l-1.97 9.293c-.145.658-.537.818-1.084.508l-3-2.211-1.447 1.394c-.16.16-.295.295-.605.295l.213-3.053 5.56-5.023c.242-.213-.054-.333-.373-.121l-6.871 4.326-2.962-.924c-.643-.204-.657-.643.136-.953l11.57-4.461c.537-.194 1.006.131.833.93z"/></svg>
+            <span>To'lov: <strong>@<?= Security::e($botUsername) ?></strong> Telegram bot orqali</span>
+        </div>
+    </div>
+</section>
+
+<?php require __DIR__ . '/_footer.phtml'; ?>
+</body>
+</html>

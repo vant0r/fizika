@@ -58,8 +58,12 @@ $routes = [
     /* PUBLIC PAGES */
     'GET /'                  => [HomeController::class,   'landing'],
     'GET /about'             => [HomeController::class,   'about'],
+    'GET /tariffs'           => [HomeController::class,   'tariffs'],
+    'GET /blog'              => [HomeController::class,   'blog'],
+    'GET /contact'           => [HomeController::class,   'contact'],
     'GET /auth'              => [AuthController::class,   'showAuthPage'],
     'GET /profile'           => [AuthController::class,   'showProfile'],
+    'GET /user'              => [AuthController::class,   'showProfile'],
     'GET /admin'             => [AdminController::class,  'panel'],
     'GET /exam'              => function () {
         $id = (int) ($_GET['id'] ?? 0);
