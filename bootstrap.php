@@ -25,22 +25,12 @@ if (!function_exists('str_ends_with')) {
  * -------------
  * Two-mode bootstrap:
  *
- *   ┌─────────────────────────────────────────────────────────────────┐
- *   │  Mode A — Composer present (vendor/autoload.php exists):        │
- *   │    • Uses Composer's PSR-4 autoloader for App\ and dependencies │
- *   │    • Loads .env via vlucas/phpdotenv (richer parser)            │
- *   │    • firebase/php-jwt is available → AuthManager prefers it     │
- *   │                                                                 │
- *   │  Mode B — No Composer (shared host fallback):                   │
- *   │    • Registers in-house PSR-4 autoloader for App\               │
- *   │    • Parses .env with a tiny built-in parser                    │
- *   │    • AuthManager uses its in-house JWT implementation           │
- *   └─────────────────────────────────────────────────────────────────┘
- *
- * Both modes populate $_ENV / $_SERVER / putenv() identically, so the
- * rest of the application is agnostic to the bootstrap path taken.
+ * Path-agnostic: works whether this file sits at:
+ *   /project/bootstrap.php  (standard)
+ *   /public_html/bootstrap.php  (x10hosting flat layout)
  */
 
+// APP_ROOT = the directory where this bootstrap.php lives
 const APP_ROOT = __DIR__;
 
 /* ------------------------------------------------------------------

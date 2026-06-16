@@ -1,7 +1,11 @@
 ## ====================================================================
 ##  Root .htaccess
-##  Forces all traffic through /public/ (DOCUMENT_ROOT-safe scheme).
-##  Compatible with Apache 2.2+ shared hosting (x10hosting, cPanel).
+##  Two layouts supported:
+##    A) Standard: DocumentRoot != project root → rewrites to public/
+##    B) x10hosting flat: DocumentRoot = public_html → no rewrite needed
+##       (this file sits next to index.php, app/, views/, etc.)
+##
+##  The RewriteCond checks if public/ subfolder exists before redirecting.
 ## ====================================================================
 
 RewriteEngine On
@@ -9,7 +13,9 @@ RewriteEngine On
 # Don't expose internal directories
 RewriteRule ^(app|database|views|bin)(/|$) - [F,L]
 
-# Map root → public/
+# Only rewrite to public/ if public/ subfolder actually exists AND
+# we're NOT already inside it. (Skipped on flat x10hosting layout.)
+RewriteCond %{DOCUMENT_ROOT}/public -d
 RewriteCond %{REQUEST_URI} !^/public/
 RewriteRule ^(.*)$ public/$1 [L]
 

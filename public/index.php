@@ -5,10 +5,37 @@ declare(strict_types=1);
  * /public/index.php — Front Controller
  * ------------------------------------
  * Single entry point. All requests routed through here via .htaccess.
- * Loads bootstrap (env, autoloader), dispatches to a controller method.
+ *
+ * Path detection: works BOTH when deployed as:
+ *   A) Standard:  /project/public/index.php  (bootstrap at /project/bootstrap.php)
+ *   B) Flat:      /public_html/index.php     (bootstrap at /public_html/bootstrap.php)
+ *   C) x10hosting: everything inside public_html/
  */
 
-require dirname(__DIR__) . '/bootstrap.php';
+// Try standard layout first (public/ is a subfolder of the project root)
+$bootstrapPath = dirname(__DIR__) . '/bootstrap.php';
+
+// If not found, try same directory (flat layout: all files in public_html/)
+if (!is_file($bootstrapPath)) {
+    $bootstrapPath = __DIR__ . '/bootstrap.php';
+}
+
+// Last resort: try one level deeper (just in case)
+if (!is_file($bootstrapPath)) {
+    $bootstrapPath = __DIR__ . '/../bootstrap.php';
+}
+
+if (!is_file($bootstrapPath)) {
+    http_response_code(500);
+    echo '<!DOCTYPE html><html><body style="font-family:sans-serif;text-align:center;padding:60px;">';
+    echo '<h1>bootstrap.php topilmadi</h1>';
+    echo '<p>Fayllar strukturasini tekshiring. <code>bootstrap.php</code> fayli <code>index.php</code> bilan bir papkada yoki bir daraja yuqorida bo\'lishi kerak.</p>';
+    echo '<p>Hozirgi yo\'l: <code>' . htmlspecialchars(__DIR__) . '</code></p>';
+    echo '</body></html>';
+    exit;
+}
+
+require $bootstrapPath;
 
 use App\Controllers\AdminController;
 use App\Controllers\AuthController;

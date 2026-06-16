@@ -26,7 +26,13 @@ if (file_exists(__DIR__ . '/../.env') && filesize(__DIR__ . '/../.env') > 50) {
     die('<h1>Already installed</h1><p>.env allaqachon mavjud. Qayta install qilish uchun .env ni o\'chiring.</p>');
 }
 
-$rootDir = realpath(__DIR__ . '/..') ?: dirname(__DIR__);
+$rootDir = __DIR__;
+// If install.php is in public/ subfolder, go up one level
+// If it's in public_html/ (flat layout), stay in same dir
+if (basename($rootDir) === 'public' && is_dir(dirname($rootDir) . '/app')) {
+    $rootDir = dirname($rootDir);
+}
+// x10hosting: everything is in public_html — rootDir = __DIR__
 $errors  = [];
 $success = false;
 $domain  = '';
