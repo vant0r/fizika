@@ -9,669 +9,218 @@ use App\Core\Security;
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title><?= Security::e((string) $exam['title']) ?> — Imtihon</title>
-
+    <title><?= Security::e((string)$exam['title']) ?> — Imtihon</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;800&family=Inter:wght@300;400;500;700;900&display=swap" rel="stylesheet">
-
-    <!-- MathJax (LaTeX) -->
-    <script>
-        window.MathJax = {
-            tex: {
-                inlineMath: [['$', '$']],
-                displayMath: [['$$', '$$']],
-                processEscapes: true,
-            },
-            svg: { fontCache: 'global' },
-            startup: { typeset: false },
-        };
-    </script>
+    <script>tailwind.config={theme:{extend:{colors:{sky:{50:'#f0f9ff',100:'#e0f2fe',200:'#bae6fd',300:'#7dd3fc',400:'#38bdf8',500:'#0ea5e9',600:'#0284c7',700:'#0369a1',800:'#075985',900:'#0c4a6e'}}}}}</script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <script>window.MathJax={tex:{inlineMath:[['$','$']],displayMath:[['$$','$$']],processEscapes:true},svg:{fontCache:'global'},startup:{typeset:false}};</script>
     <script async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js"></script>
-
     <style>
-        :root { --bd: 1px solid #000; }
-        html, body { background:#fff; color:#000; font-family:'Inter',sans-serif; height:100%; }
-        body { overflow:hidden; }
-        .mono { font-family:'JetBrains Mono', monospace; letter-spacing:-.02em; }
-        .brutal { border: var(--bd); }
-        .brutal-thick { border: 2px solid #000; }
-        .hover-fill:hover { background:#f3f3f3; }
-        ::selection { background:#000; color:#fff; }
-        .btn-brutal { border: 2px solid #000; padding:.55rem 1rem; font-weight:700; text-transform:uppercase; letter-spacing:.04em; transition: all .12s; }
-        .btn-brutal:hover { background:#000; color:#fff; }
-        .btn-brutal:active { transform: translate(1px,1px); }
-        .btn-ghost { border: 1px solid #000; padding:.4rem .75rem; font-size:.7rem; text-transform:uppercase; letter-spacing:.06em; }
-        .btn-ghost:hover { background:#f3f3f3; }
+        body{font-family:'Inter',sans-serif;background:#f8fafc;overflow:hidden;height:100vh;}
+        ::selection{background:#0ea5e9;color:#fff;}
 
-        /* Question navigation cells */
-        .qcell {
-            border: var(--bd);
-            aspect-ratio: 1 / 1;
-            display:flex; align-items:center; justify-content:center;
-            font-family:'JetBrains Mono', monospace;
-            font-weight:700; font-size:.875rem;
-            cursor:pointer;
-            position:relative;
-            transition: background .1s;
-        }
-        .qcell:hover { background:#f3f3f3; }
-        .qcell.is-current { background:#000; color:#fff; }
-        .qcell.is-answered { background:#000; color:#fff; }
-        .qcell.is-current.is-answered { background:#000; color:#fff; outline:2px solid #fff; outline-offset:-4px; }
-        .qcell.is-flag::after {
-            content:""; position:absolute; top:2px; right:2px;
-            width:0; height:0; border-style:solid;
-            border-width: 0 8px 8px 0;
-            border-color: transparent #000 transparent transparent;
-        }
-        .qcell.is-current.is-flag::after { border-color: transparent #fff transparent transparent; }
-
-        /* Layout columns */
-        .exam-grid {
-            display:grid;
-            grid-template-columns: 280px 1fr 320px;
-            grid-template-rows: 56px 1fr;
-            height:100vh;
-        }
-        .pane { overflow:auto; }
-
-        /* Option items */
-        .opt {
-            display:flex; gap:.75rem; align-items:flex-start;
-            padding:.85rem 1rem;
-            border: var(--bd);
-            cursor:pointer;
-            margin-bottom:.5rem;
-            transition: background .12s;
-        }
-        .opt:hover { background:#f3f3f3; }
-        .opt.is-selected { background:#000; color:#fff; }
-        .opt input { accent-color:#000; }
-
-        /* Canvas overlay */
-        #scratchPad {
-            background:
-                linear-gradient(#0001 1px, transparent 1px) 0 0/20px 20px,
-                linear-gradient(90deg, #0001 1px, transparent 1px) 0 0/20px 20px,
-                #fff;
-            cursor: crosshair;
-            touch-action:none;
-        }
-        #scratchPad.is-erasing { cursor: cell; }
-
-        @keyframes pulse { 50% { opacity:.55; } }
-        .timer-warn { animation: pulse 1s infinite; }
+        .exam-grid{display:grid;grid-template-columns:260px 1fr 300px;grid-template-rows:56px 1fr;height:100vh;}
+        .btn-p{background:linear-gradient(135deg,#0ea5e9,#0284c7);color:#fff;border:none;border-radius:8px;padding:.5rem 1rem;font-weight:700;font-size:.78rem;cursor:pointer;transition:all .15s;}
+        .btn-p:hover{box-shadow:0 4px 12px rgba(14,165,233,.25);}
+        .btn-o{border:1.5px solid #bae6fd;border-radius:8px;padding:.4rem .8rem;font-weight:600;font-size:.72rem;color:#0284c7;cursor:pointer;transition:all .15s;background:transparent;}
+        .btn-o:hover{background:#f0f9ff;border-color:#38bdf8;}
+        .qcell{width:100%;aspect-ratio:1;border-radius:8px;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:.8rem;cursor:pointer;transition:all .12s;background:#fff;border:1.5px solid #e0f2fe;color:#64748b;}
+        .qcell:hover{border-color:#38bdf8;background:#f0f9ff;}
+        .qcell.current{background:linear-gradient(135deg,#0ea5e9,#0284c7);color:#fff;border-color:transparent;box-shadow:0 2px 8px rgba(14,165,233,.25);}
+        .qcell.answered{background:#0c4a6e;color:#fff;border-color:transparent;}
+        .qcell.flagged::after{content:'';position:absolute;top:2px;right:2px;width:6px;height:6px;border-radius:50%;background:#f59e0b;}
+        .qcell{position:relative;}
+        .opt{display:flex;gap:.75rem;align-items:flex-start;padding:.85rem 1rem;border:1.5px solid #e0f2fe;border-radius:12px;cursor:pointer;margin-bottom:.5rem;transition:all .15s;}
+        .opt:hover{border-color:#38bdf8;background:#f0f9ff;}
+        .opt.selected{background:linear-gradient(135deg,#0ea5e9,#0284c7);color:#fff;border-color:transparent;}
+        .opt.selected input{accent-color:#fff;}
+        #scratchPad{background:linear-gradient(#e0f2fe 1px,transparent 1px) 0 0/24px 24px,linear-gradient(90deg,#e0f2fe 1px,transparent 1px) 0 0/24px 24px,#fff;cursor:crosshair;touch-action:none;}
+        #scratchPad.erasing{cursor:cell;}
+        @keyframes pulse{50%{opacity:.5;}}
+        .timer-warn{animation:pulse 1s infinite;color:#dc2626;}
+        .progress-mini{height:3px;border-radius:2px;background:#e0f2fe;overflow:hidden;}
+        .progress-mini>span{display:block;height:100%;background:linear-gradient(90deg,#38bdf8,#0284c7);transition:width .3s;}
     </style>
 </head>
 <body>
-
 <div class="exam-grid">
 
-    <!-- ===================================================================
-         TOP BAR (full width, spans 3 cols)
-         =================================================================== -->
-    <header class="col-span-3 brutal border-l-0 border-r-0 border-t-0 flex items-center justify-between px-4">
-        <div class="flex items-center gap-4">
-            <div class="mono font-extrabold tracking-tight">PHYS // <?= Security::e((string) $exam['title']) ?></div>
-            <span class="brutal px-2 py-0.5 text-[10px] uppercase tracking-widest mono">#<?= (int) $user['id'] ?></span>
+
+<!-- ===== TOP BAR (spans 3 cols) ===== -->
+<header class="col-span-3 bg-white border-b border-sky-100 flex items-center justify-between px-5">
+    <div class="flex items-center gap-3">
+        <div class="w-7 h-7 rounded-lg bg-gradient-to-br from-sky-400 to-sky-600 flex items-center justify-center">
+            <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
         </div>
+        <span class="text-sm font-bold text-gray-900"><?= Security::e((string)$exam['title']) ?></span>
+        <span class="text-[10px] bg-sky-50 text-sky-700 font-semibold px-2 py-0.5 rounded-full">#<?= (int)$user['id'] ?></span>
+    </div>
+    <div class="flex items-center gap-3">
+        <div class="bg-sky-50 border border-sky-200 rounded-lg px-4 py-1.5 text-lg font-bold text-sky-800" id="timerBox">--:--</div>
+        <button id="submitBtn" class="btn-p">Yakunlash</button>
+        <button id="exitBtn" class="btn-o">Chiqish</button>
+    </div>
+</header>
 
-        <div class="flex items-center gap-3">
-            <div class="brutal px-3 py-1.5 mono text-xl font-extrabold" id="timerBox">--:--</div>
-            <button id="submitBtn" class="btn-brutal">↳ Yakunlash</button>
-            <button id="exitBtn" class="btn-ghost">Chiqish</button>
+<!-- ===== LEFT: Question nav ===== -->
+<aside class="bg-white border-r border-sky-100 p-4 overflow-y-auto">
+    <div class="flex items-center justify-between mb-3">
+        <span class="text-xs font-semibold text-gray-500 uppercase tracking-wider">Savollar</span>
+        <span class="text-xs font-bold text-sky-700" id="answeredCounter">0/0</span>
+    </div>
+    <div id="qnav" class="grid grid-cols-5 gap-1.5"></div>
+    <div class="mt-5 space-y-1.5 text-[10px] text-gray-500">
+        <div class="flex items-center gap-2"><div class="w-4 h-4 rounded bg-white border border-sky-200"></div>Ko'rilmagan</div>
+        <div class="flex items-center gap-2"><div class="w-4 h-4 rounded bg-sky-900"></div>Belgilangan</div>
+        <div class="flex items-center gap-2"><div class="w-4 h-4 rounded bg-gradient-to-br from-sky-400 to-sky-600"></div>Joriy</div>
+        <div class="flex items-center gap-2"><div class="w-4 h-4 rounded bg-white border border-sky-200 relative"><span class="absolute top-0 right-0 w-1.5 h-1.5 rounded-full bg-amber-500"></span></div>Bayroqcha</div>
+    </div>
+    <div class="mt-4 progress-mini"><span id="progressBar" style="width:0%"></span></div>
+</aside>
+
+<!-- ===== CENTER: Question ===== -->
+<main class="overflow-y-auto p-6 lg:p-8">
+    <div class="flex items-center justify-between mb-5">
+        <div>
+            <div class="text-[10px] text-gray-400 uppercase tracking-wider font-medium" id="qSection">Bo'lim</div>
+            <h1 class="text-xl font-bold text-gray-900 mt-0.5" id="qTitle">Savol</h1>
         </div>
-    </header>
-
-    <!-- ===================================================================
-         LEFT: Question navigator
-         =================================================================== -->
-    <aside class="pane brutal border-l-0 border-t-0 border-b-0 p-4">
-        <div class="flex items-baseline justify-between mb-3">
-            <h2 class="mono text-xs uppercase tracking-widest">Savollar</h2>
-            <span class="mono text-xs" id="answeredCounter">0 / 0</span>
+        <div class="flex items-center gap-2">
+            <button id="flagBtn" class="btn-o">⚑ Bayroq</button>
+            <button id="prevBtn" class="btn-o">←</button>
+            <button id="nextBtn" class="btn-o">→</button>
         </div>
+    </div>
+    <div id="qBody" class="bg-white rounded-xl border border-sky-100 p-6 text-[.95rem] leading-relaxed shadow-sm">Yuklanmoqda...</div>
+    <div id="qOptions" class="mt-5"></div>
+    <div id="qOpenAnswer" class="mt-5 hidden">
+        <label class="text-xs font-semibold text-gray-500 uppercase tracking-wider">Javobingiz</label>
+        <input id="openAnswer" type="text" class="w-full mt-1 border-1.5 border-sky-200 rounded-xl p-3 text-lg font-medium focus:border-sky-500 focus:ring-2 focus:ring-sky-100 outline-none transition" placeholder="Javobni kiriting...">
+    </div>
+    <div id="qMatching" class="mt-5 hidden"></div>
+    <div class="mt-6 text-[10px] text-gray-400 uppercase tracking-wider" id="autosaveLabel">— autosaqlash —</div>
+</main>
 
-        <div id="qnav" class="grid grid-cols-5 gap-1.5"></div>
-
-        <div class="mt-6 brutal p-3 space-y-1.5 text-[10px] mono uppercase tracking-widest">
-            <div class="flex items-center gap-2"><span class="qcell" style="width:14px;height:14px;aspect-ratio:auto;"></span>Ko'rilmagan</div>
-            <div class="flex items-center gap-2"><span class="qcell is-answered" style="width:14px;height:14px;aspect-ratio:auto;"></span>Belgilangan</div>
-            <div class="flex items-center gap-2"><span class="qcell is-current" style="width:14px;height:14px;aspect-ratio:auto;"></span>Joriy savol</div>
-            <div class="flex items-center gap-2"><span class="qcell is-flag" style="width:14px;height:14px;aspect-ratio:auto;"></span>Bayroqcha</div>
+<!-- ===== RIGHT: Scratchpad ===== -->
+<aside class="bg-white border-l border-sky-100 flex flex-col">
+    <div class="px-4 py-3 border-b border-sky-50 flex items-center justify-between">
+        <span class="text-xs font-semibold text-gray-500 uppercase tracking-wider">Qoralama</span>
+        <div class="flex gap-1">
+            <button id="penBtn" class="btn-o text-[10px] px-2 py-1">✎ Qalam</button>
+            <button id="eraseBtn" class="btn-o text-[10px] px-2 py-1">⌫ O'chir</button>
+            <button id="clearBtn" class="btn-o text-[10px] px-2 py-1">⊘ Tozala</button>
         </div>
-    </aside>
-
-    <!-- ===================================================================
-         CENTER: Question viewport
-         =================================================================== -->
-    <main class="pane p-6 lg:p-10">
-        <div id="qHeader" class="flex items-baseline justify-between mb-6">
-            <div>
-                <div class="text-[10px] uppercase tracking-widest mono opacity-60" id="qSection">Bo'lim</div>
-                <h1 class="mono text-3xl font-extrabold mt-1" id="qTitle">Savol</h1>
-            </div>
-            <div class="flex items-center gap-2">
-                <button id="flagBtn" class="btn-ghost">⚑ Bayroqcha</button>
-                <button id="prevBtn" class="btn-ghost">← Oldingi</button>
-                <button id="nextBtn" class="btn-ghost">Keyingi →</button>
-            </div>
-        </div>
-
-        <article id="qBody" class="brutal-thick p-6 leading-relaxed text-[1.05rem]">
-            Yuklanmoqda...
-        </article>
-
-        <div id="qOptions" class="mt-6"></div>
-
-        <div id="qOpenAnswer" class="mt-6 hidden">
-            <label class="text-[10px] uppercase tracking-widest mono">Javobingiz</label>
-            <input id="openAnswer" type="text"
-                   class="w-full brutal mt-2 p-3 mono text-lg"
-                   placeholder="javobni kiriting...">
-        </div>
-
-        <div id="qMatching" class="mt-6 hidden"></div>
-
-        <footer class="mt-8 brutal border-l-0 border-r-0 border-b-0 pt-4 flex items-center justify-between text-xs mono uppercase tracking-widest">
-            <span id="autosaveLabel" class="opacity-60">— autosaqlash kutilmoqda —</span>
-            <span class="opacity-60">CSRF: ●</span>
-        </footer>
-    </main>
-
-    <!-- ===================================================================
-         RIGHT: Virtual scratchpad (HTML5 Canvas)
-         =================================================================== -->
-    <aside class="pane brutal border-r-0 border-t-0 border-b-0 flex flex-col">
-        <div class="p-3 brutal border-l-0 border-r-0 border-t-0 flex items-center justify-between">
-            <span class="mono text-xs uppercase tracking-widest">Virtual Qoralama</span>
-            <div class="flex items-center gap-1">
-                <button id="penBtn" class="btn-ghost">✎ Qalam</button>
-                <button id="eraseBtn" class="btn-ghost">⌫ O'chir</button>
-                <button id="clearBtn" class="btn-ghost">⊘ Tozalash</button>
-            </div>
-        </div>
-        <div class="flex-1 relative">
-            <canvas id="scratchPad" class="w-full h-full block"></canvas>
-        </div>
-        <div class="p-2 brutal border-l-0 border-r-0 border-b-0 mono text-[10px] uppercase tracking-widest opacity-60 flex items-center justify-between">
-            <span>Sichqoncha / Stylus</span>
-            <span id="penInfo">Qalam · 2px</span>
-        </div>
-    </aside>
-
+    </div>
+    <div class="flex-1 relative"><canvas id="scratchPad" class="w-full h-full block"></canvas></div>
+    <div class="px-4 py-2 border-t border-sky-50 text-[10px] text-gray-400 flex justify-between">
+        <span>Sichqoncha / Stylus</span>
+        <span id="penInfo">Qalam · 2px</span>
+    </div>
+</aside>
 </div>
 
-<!-- ============ RESULT MODAL ============ -->
-<div id="resultModal" class="fixed inset-0 hidden items-center justify-center bg-black/40 z-50 p-4">
-    <div class="brutal-thick bg-white max-w-3xl w-full">
-        <div class="p-5 brutal border-l-0 border-r-0 border-t-0 flex items-center justify-between">
-            <div>
-                <div class="text-xs uppercase tracking-widest mono opacity-60">Natija</div>
-                <h3 class="mono text-2xl font-extrabold leading-none" id="resTitle">[ NATIJA ]</h3>
-            </div>
-            <span class="mono text-3xl font-black" id="resGrade">—</span>
+
+<!-- Result modal -->
+<div id="resultModal" class="fixed inset-0 hidden items-center justify-center bg-black/40 backdrop-blur-sm z-50 p-4">
+    <div class="bg-white rounded-2xl border border-sky-100 max-w-3xl w-full shadow-xl overflow-hidden">
+        <div class="bg-gradient-to-r from-sky-500 to-sky-700 text-white px-6 py-5 flex items-center justify-between">
+            <div><div class="text-xs text-sky-200 uppercase tracking-wider">Natija</div><h3 class="text-2xl font-black" id="resTitle">Imtihon yakunlandi</h3></div>
+            <span class="text-4xl font-black" id="resGrade">—</span>
         </div>
-
         <div class="p-6">
-            <div class="grid grid-cols-2 md:grid-cols-4 brutal-thick">
-                <div class="p-4 brutal border-t-0 border-l-0 border-b-0">
-                    <div class="text-[10px] uppercase tracking-widest mono opacity-60">Ball</div>
-                    <div class="mono text-3xl font-extrabold" id="resScore">0</div>
-                </div>
-                <div class="p-4 brutal border-t-0 border-l-0 border-b-0">
-                    <div class="text-[10px] uppercase tracking-widest mono opacity-60">To'g'ri</div>
-                    <div class="mono text-3xl font-extrabold" id="resCorrect">0</div>
-                </div>
-                <div class="p-4 brutal border-t-0 border-l-0 border-b-0">
-                    <div class="text-[10px] uppercase tracking-widest mono opacity-60">Xato</div>
-                    <div class="mono text-3xl font-extrabold" id="resWrong">0</div>
-                </div>
-                <div class="p-4">
-                    <div class="text-[10px] uppercase tracking-widest mono opacity-60">Bo'sh</div>
-                    <div class="mono text-3xl font-extrabold" id="resSkipped">0</div>
-                </div>
+            <div class="grid grid-cols-4 gap-4 mb-6">
+                <div class="text-center"><div class="text-2xl font-bold text-sky-700" id="resScore">0</div><div class="text-[10px] text-gray-400 uppercase">Ball</div></div>
+                <div class="text-center"><div class="text-2xl font-bold text-emerald-600" id="resCorrect">0</div><div class="text-[10px] text-gray-400 uppercase">To'g'ri</div></div>
+                <div class="text-center"><div class="text-2xl font-bold text-red-500" id="resWrong">0</div><div class="text-[10px] text-gray-400 uppercase">Xato</div></div>
+                <div class="text-center"><div class="text-2xl font-bold text-gray-400" id="resSkipped">0</div><div class="text-[10px] text-gray-400 uppercase">Bo'sh</div></div>
             </div>
-
-            <h4 class="mono text-sm uppercase tracking-widest mt-6 mb-3">Bo'limlar bo'yicha tahlil</h4>
+            <h4 class="text-xs font-bold text-gray-500 uppercase tracking-wider mb-3">Bo'limlar tahlili</h4>
             <div id="resSections" class="space-y-2"></div>
-
-            <a href="/profile" class="btn-brutal mt-6 inline-block">→ Profilga qaytish</a>
+            <a href="/profile" class="btn-p inline-block mt-6">Profilga qaytish →</a>
         </div>
     </div>
 </div>
 
 <script>
 'use strict';
+const EXAM_ID=<?=(int)$exam['id']?>;
+let CSRF_TOKEN=<?=json_encode($csrfToken,JSON_HEX_TAG|JSON_HEX_AMP|JSON_HEX_APOS|JSON_HEX_QUOT|JSON_UNESCAPED_UNICODE)?>;
+let questions=[],answers={},currentIdx=0,remaining=0,timerHandle=null,saveQueue=new Map(),saving=false,submitted=false;
 
-/* ===================================================================
-   GLOBAL STATE
-   =================================================================== */
-const EXAM_ID    = <?= (int) $exam['id'] ?>;
-let   CSRF_TOKEN = <?= json_encode($csrfToken, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_UNESCAPED_UNICODE) ?>;
-
-let questions = [];
-let answers   = {};   // { qid: { answer, flag, ts } }
-let currentIdx = 0;
-let remaining = 0;
-let timerHandle = null;
-let saveQueue = new Map();
-let saving = false;
-let submitted = false;
-
-/* ===================================================================
-   FETCH HELPERS
-   =================================================================== */
-async function api(path, opts = {}) {
-    const headers = Object.assign({
-        'X-Requested-With': 'XMLHttpRequest',
-        'X-CSRF-Token': CSRF_TOKEN,
-    }, opts.headers || {});
-    if (opts.body && typeof opts.body !== 'string') {
-        headers['Content-Type'] = 'application/json';
-        opts.body = JSON.stringify(opts.body);
-    }
-    const res = await fetch(path, Object.assign({}, opts, { headers }));
-
-    // Rolling CSRF: server may issue a fresh token on every response.
-    const fresh = res.headers.get('X-CSRF-Token');
-    if (fresh) CSRF_TOKEN = fresh;
-
-    let data;
-    try { data = await res.json(); } catch { data = {}; }
-    if (!res.ok) throw new Error(data.error || ('HTTP ' + res.status));
+async function api(path,opts={}){
+    const h=Object.assign({'X-Requested-With':'XMLHttpRequest','X-CSRF-Token':CSRF_TOKEN},opts.headers||{});
+    if(opts.body&&typeof opts.body!=='string'){h['Content-Type']='application/json';opts.body=JSON.stringify(opts.body);}
+    const res=await fetch(path,Object.assign({},opts,{headers:h}));
+    const fresh=res.headers.get('X-CSRF-Token');if(fresh)CSRF_TOKEN=fresh;
+    let data;try{data=await res.json();}catch{data={};}
+    if(!res.ok)throw new Error(data.error||('HTTP '+res.status));
     return data;
 }
 
-/* ===================================================================
-   FULLSCREEN ENFORCEMENT
-   =================================================================== */
-function goFullscreen() {
-    const el = document.documentElement;
-    const req = el.requestFullscreen || el.webkitRequestFullscreen || el.msRequestFullscreen;
-    if (req) req.call(el).catch(() => {});
+function goFullscreen(){const el=document.documentElement;(el.requestFullscreen||el.webkitRequestFullscreen||el.msRequestFullscreen)?.call(el).catch(()=>{});}
+
+async function boot(){
+    try{await api(`/api/exam/${EXAM_ID}/start`,{method:'POST',body:{}});}catch(err){alert('Boshlab bo\'lmadi: '+err.message);window.location.href='/profile';return;}
+    try{const st=await api(`/api/exam/${EXAM_ID}/state`);if(st.expired){showResult({expired:true});return;}questions=st.questions||[];answers=st.answers||{};remaining=parseInt(st.remaining_seconds||0,10);renderNav();renderQuestion(0);startTimer();}catch(err){alert('Sessiya yuklanmadi: '+err.message);window.location.href='/profile';}
 }
 
-/* ===================================================================
-   BOOT — start session, fetch state, render
-   =================================================================== */
-async function boot() {
-    try {
-        await api(`/api/exam/${EXAM_ID}/start`, { method:'POST', body: {} });
-    } catch (err) {
-        alert('Imtihonni boshlab bo\'lmadi: ' + err.message);
-        window.location.href = '/profile';
-        return;
-    }
-    try {
-        const st = await api(`/api/exam/${EXAM_ID}/state`);
-        if (st.expired) { showResult({ expired: true }); return; }
-        questions = st.questions || [];
-        answers   = st.answers   || {};
-        remaining = parseInt(st.remaining_seconds || 0, 10);
-        renderNav();
-        renderQuestion(0);
-        startTimer();
-    } catch (err) {
-        alert('Sessiya yuklanmadi: ' + err.message);
-        window.location.href = '/profile';
-    }
-}
+function renderNav(){const nav=document.getElementById('qnav');nav.innerHTML='';questions.forEach((_,i)=>{const c=document.createElement('div');c.className='qcell';c.textContent=i+1;c.addEventListener('click',()=>renderQuestion(i));nav.appendChild(c);});refreshNav();}
+function refreshNav(){const cells=document.querySelectorAll('#qnav .qcell');let answered=0;cells.forEach((c,i)=>{const q=questions[i],a=answers[q.id];c.classList.toggle('current',i===currentIdx);const has=a&&a.answer!==null&&a.answer!==''&&!(Array.isArray(a.answer)&&!a.answer.length);c.classList.toggle('answered',!!has);c.classList.toggle('flagged',!!(a&&a.flag));if(has)answered++;});document.getElementById('answeredCounter').textContent=`${answered}/${questions.length}`;document.getElementById('progressBar').style.width=`${questions.length?Math.round(answered/questions.length*100):0}%`;}
 
-/* ===================================================================
-   QUESTION NAVIGATION
-   =================================================================== */
-function renderNav() {
-    const nav = document.getElementById('qnav');
-    nav.innerHTML = '';
-    questions.forEach((q, i) => {
-        const cell = document.createElement('div');
-        cell.className = 'qcell';
-        cell.textContent = String(i + 1);
-        cell.addEventListener('click', () => renderQuestion(i));
-        nav.appendChild(cell);
-    });
-    refreshNav();
-}
 
-function refreshNav() {
-    const cells = document.querySelectorAll('#qnav .qcell');
-    let answered = 0;
-    cells.forEach((cell, i) => {
-        const q = questions[i];
-        const a = answers[q.id];
-        cell.classList.toggle('is-current', i === currentIdx);
-        const hasAns = a && a.answer !== null && a.answer !== '' && !(Array.isArray(a.answer) && a.answer.length === 0);
-        cell.classList.toggle('is-answered', !!hasAns);
-        cell.classList.toggle('is-flag', !!(a && a.flag));
-        if (hasAns) answered++;
-    });
-    document.getElementById('answeredCounter').textContent = `${answered} / ${questions.length}`;
-}
+function renderQuestion(idx){if(idx<0||idx>=questions.length)return;currentIdx=idx;const q=questions[idx],a=answers[q.id]||{answer:null,flag:false};
+document.getElementById('qSection').textContent=q.section||'—';document.getElementById('qTitle').textContent=`Savol ${idx+1} / ${questions.length}`;document.getElementById('qBody').innerHTML=q.question_text||'';
+const optsBox=document.getElementById('qOptions'),openBox=document.getElementById('qOpenAnswer'),matchBox=document.getElementById('qMatching');optsBox.innerHTML='';openBox.classList.add('hidden');matchBox.classList.add('hidden');matchBox.innerHTML='';
+if(q.type==='mcq'){const opts=q.options||[];opts.forEach((opt,k)=>{const div=document.createElement('label');div.className='opt';const isSel=String(a.answer)===String(opt.key??k);if(isSel)div.classList.add('selected');const val=opt.key??k;div.innerHTML=`<input type="radio" name="opt-${q.id}" value="${esc(String(val))}" ${isSel?'checked':''} class="mt-0.5"><span class="text-sm font-bold mr-1 text-sky-600">${String.fromCharCode(65+k)}.</span><span>${opt.text||opt.label||opt}</span>`;div.addEventListener('change',()=>{answers[q.id]=Object.assign({},a,{answer:val});refreshNav();queueSave(q.id);rerenderOpts();});optsBox.appendChild(div);});}
+else if(q.type==='open'){openBox.classList.remove('hidden');const inp=document.getElementById('openAnswer');inp.value=a.answer??'';inp.oninput=()=>{answers[q.id]=Object.assign({},a,{answer:inp.value});refreshNav();queueSave(q.id);};}
+else if(q.type==='matching'){matchBox.classList.remove('hidden');const left=q.options?.left||[],right=q.options?.right||[],cur=(typeof a.answer==='object'&&a.answer!==null)?a.answer:{};left.forEach(L=>{const row=document.createElement('div');row.className='flex items-center gap-3 mb-2';row.innerHTML=`<span class="bg-sky-50 border border-sky-200 rounded-lg px-3 py-2 flex-1 text-sm font-medium">${esc(String(L))}</span><span class="text-gray-400">→</span><select class="flex-1 border border-sky-200 rounded-lg p-2 text-sm focus:border-sky-500 outline-none" data-left="${esc(String(L))}"><option value="">—</option>${right.map(R=>`<option value="${esc(String(R))}" ${cur[L]===R?'selected':''}>${esc(String(R))}</option>`).join('')}</select>`;const sel=row.querySelector('select');sel.addEventListener('change',()=>{cur[L]=sel.value||null;answers[q.id]=Object.assign({},a,{answer:{...cur}});refreshNav();queueSave(q.id);});matchBox.appendChild(row);});}
+document.getElementById('flagBtn').classList.toggle('bg-amber-50',!!a.flag);refreshNav();typesetMath();}
+function rerenderOpts(){document.querySelectorAll('#qOptions .opt').forEach(el=>{el.classList.toggle('selected',el.querySelector('input').checked);});}
+function typesetMath(){if(window.MathJax&&window.MathJax.typesetPromise)window.MathJax.typesetPromise([document.getElementById('qBody'),document.getElementById('qOptions')]).catch(()=>{});}
+function esc(s){return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
 
-function renderQuestion(idx) {
-    if (idx < 0 || idx >= questions.length) return;
-    currentIdx = idx;
-    const q = questions[idx];
-    const a = answers[q.id] || { answer: null, flag: false };
+// Autosave
+function queueSave(qid){saveQueue.set(qid,answers[qid]);document.getElementById('autosaveLabel').textContent='— saqlanmoqda... —';if(!saving)drainSaveQueue();}
+async function drainSaveQueue(){if(saving)return;saving=true;while(saveQueue.size>0){const[qid,payload]=saveQueue.entries().next().value;saveQueue.delete(qid);try{await api(`/api/exam/${EXAM_ID}/save`,{method:'POST',body:{question_id:qid,answer:payload.answer,flag:!!payload.flag}});}catch(err){if(err.message&&err.message.toLowerCase().includes('vaqt')){doSubmit(true);break;}}}saving=false;document.getElementById('autosaveLabel').textContent='— saqlandi ✓ —';}
 
-    document.getElementById('qSection').textContent = q.section || '—';
-    document.getElementById('qTitle').textContent  = `[ Savol #${idx + 1} / ${questions.length} ]`;
-    document.getElementById('qBody').innerHTML     = q.question_text || '';
+// Timer
+function startTimer(){updateTimer();timerHandle=setInterval(()=>{remaining=Math.max(0,remaining-1);updateTimer();if(remaining<=0){clearInterval(timerHandle);doSubmit(true);}},1000);}
+function updateTimer(){const m=Math.floor(remaining/60).toString().padStart(2,'0'),s=(remaining%60).toString().padStart(2,'0');const box=document.getElementById('timerBox');box.textContent=`${m}:${s}`;box.classList.toggle('timer-warn',remaining<=60);}
 
-    const optsBox  = document.getElementById('qOptions');
-    const openBox  = document.getElementById('qOpenAnswer');
-    const matchBox = document.getElementById('qMatching');
-    optsBox.innerHTML = '';
-    openBox.classList.add('hidden');
-    matchBox.classList.add('hidden');
-    matchBox.innerHTML = '';
+// Submit
+async function doSubmit(forced=false){if(submitted)return;if(!forced&&!confirm('Yakunlamoqchimisiz?'))return;submitted=true;if(timerHandle)clearInterval(timerHandle);await drainSaveQueue();try{const res=await api(`/api/exam/${EXAM_ID}/submit`,{method:'POST',body:{}});showResult(res);}catch(err){alert('Xato: '+err.message);submitted=false;}}
+function showResult(r){document.getElementById('resScore').textContent=(r.score??0).toFixed(1);document.getElementById('resGrade').textContent=r.grade??'—';document.getElementById('resCorrect').textContent=r.correct_count??0;document.getElementById('resWrong').textContent=r.wrong_count??0;document.getElementById('resSkipped').textContent=r.skipped_count??0;
+const box=document.getElementById('resSections');box.innerHTML='';(r.section_analysis||[]).forEach(s=>{const row=document.createElement('div');row.className='flex items-center gap-3 bg-sky-50/50 rounded-lg p-3';row.innerHTML=`<div class="flex-1 text-xs font-semibold text-gray-700 uppercase">${esc(s.section)}</div><div class="text-xs text-gray-500">${s.correct}/${s.total}</div><div class="flex-1 progress-mini"><span style="width:${s.percent}%"></span></div><div class="text-sm font-bold text-sky-700 w-12 text-right">${s.percent}%</div>${s.weakness?'<span class="text-[10px] bg-red-50 text-red-600 font-semibold px-2 py-0.5 rounded-full">Zaif</span>':''}`;box.appendChild(row);});
+const m=document.getElementById('resultModal');m.classList.remove('hidden');m.classList.add('flex');if(document.fullscreenElement)document.exitFullscreen().catch(()=>{});}
 
-    if (q.type === 'mcq') {
-        const opts = q.options || [];
-        opts.forEach((opt, k) => {
-            const div = document.createElement('label');
-            div.className = 'opt';
-            const isSel = String(a.answer) === String(opt.key ?? k);
-            if (isSel) div.classList.add('is-selected');
-            const value = opt.key ?? k;
-            div.innerHTML = `
-                <input type="radio" name="opt-${q.id}" value="${escapeHtml(String(value))}" ${isSel ? 'checked' : ''}>
-                <span class="mono text-sm font-bold mr-2">[${String.fromCharCode(65 + k)}]</span>
-                <span>${opt.text || opt.label || opt}</span>
-            `;
-            div.addEventListener('change', () => {
-                answers[q.id] = Object.assign({}, a, { answer: value });
-                refreshNav();
-                queueSave(q.id);
-                rerenderSelected();
-            });
-            optsBox.appendChild(div);
-        });
-    } else if (q.type === 'open') {
-        openBox.classList.remove('hidden');
-        const inp = document.getElementById('openAnswer');
-        inp.value = a.answer ?? '';
-        inp.oninput = () => {
-            answers[q.id] = Object.assign({}, a, { answer: inp.value });
-            refreshNav();
-            queueSave(q.id);
-        };
-    } else if (q.type === 'matching') {
-        matchBox.classList.remove('hidden');
-        const left  = q.options?.left  || [];
-        const right = q.options?.right || [];
-        const cur   = (typeof a.answer === 'object' && a.answer !== null) ? a.answer : {};
-        left.forEach((L, i) => {
-            const row = document.createElement('div');
-            row.className = 'flex items-center gap-3 mb-2';
-            row.innerHTML = `
-                <span class="brutal px-3 py-2 flex-1">${escapeHtml(String(L))}</span>
-                <span class="mono">→</span>
-                <select class="brutal p-2 flex-1" data-left="${escapeHtml(String(L))}">
-                    <option value="">—</option>
-                    ${right.map(R => `<option value="${escapeHtml(String(R))}" ${cur[L] === R ? 'selected' : ''}>${escapeHtml(String(R))}</option>`).join('')}
-                </select>
-            `;
-            const sel = row.querySelector('select');
-            sel.addEventListener('change', () => {
-                cur[L] = sel.value || null;
-                answers[q.id] = Object.assign({}, a, { answer: { ...cur } });
-                refreshNav();
-                queueSave(q.id);
-            });
-            matchBox.appendChild(row);
-        });
-    }
+// Controls
+document.getElementById('prevBtn').addEventListener('click',()=>renderQuestion(currentIdx-1));
+document.getElementById('nextBtn').addEventListener('click',()=>renderQuestion(currentIdx+1));
+document.getElementById('submitBtn').addEventListener('click',()=>doSubmit(false));
+document.getElementById('exitBtn').addEventListener('click',()=>{if(confirm("Chiqsangiz vaqt to'xtamaydi.")){if(document.fullscreenElement)document.exitFullscreen();window.location.href='/profile';}});
+document.getElementById('flagBtn').addEventListener('click',()=>{const q=questions[currentIdx];if(!q)return;const a=answers[q.id]||{answer:null,flag:false};a.flag=!a.flag;answers[q.id]=a;queueSave(q.id);refreshNav();renderQuestion(currentIdx);});
+document.addEventListener('keydown',(e)=>{if(e.target.tagName==='INPUT'||e.target.tagName==='TEXTAREA')return;if(e.key==='ArrowRight')renderQuestion(currentIdx+1);else if(e.key==='ArrowLeft')renderQuestion(currentIdx-1);else if(e.key==='f'||e.key==='F')document.getElementById('flagBtn').click();});
+window.addEventListener('beforeunload',(e)=>{if(!submitted){e.preventDefault();e.returnValue='';}});
 
-    document.getElementById('flagBtn').classList.toggle('btn-brutal', !!a.flag);
-    document.getElementById('flagBtn').classList.toggle('btn-ghost',  !a.flag);
 
-    refreshNav();
-    typesetMath();
-}
-
-function rerenderSelected() {
-    document.querySelectorAll('#qOptions .opt').forEach(el => {
-        const inp = el.querySelector('input');
-        el.classList.toggle('is-selected', inp.checked);
-    });
-}
-
-function typesetMath() {
-    if (window.MathJax && window.MathJax.typesetPromise) {
-        window.MathJax.typesetPromise([document.getElementById('qBody'), document.getElementById('qOptions')]).catch(() => {});
-    }
-}
-
-/* ===================================================================
-   AUTOSAVE (debounced, queued)
-   =================================================================== */
-function queueSave(qid) {
-    saveQueue.set(qid, answers[qid]);
-    document.getElementById('autosaveLabel').textContent = '— saqlanmoqda... —';
-    if (!saving) drainSaveQueue();
-}
-
-async function drainSaveQueue() {
-    if (saving) return;
-    saving = true;
-    while (saveQueue.size > 0) {
-        const [qid, payload] = saveQueue.entries().next().value;
-        saveQueue.delete(qid);
-        try {
-            await api(`/api/exam/${EXAM_ID}/save`, {
-                method: 'POST',
-                body: { question_id: qid, answer: payload.answer, flag: !!payload.flag },
-            });
-        } catch (err) {
-            console.warn('Save failed for', qid, err.message);
-            if (err.message && err.message.toLowerCase().includes('vaqt tugagan')) {
-                doSubmit(true);
-                break;
-            }
-        }
-    }
-    saving = false;
-    document.getElementById('autosaveLabel').textContent = '— hammasi saqlandi —';
-}
-
-/* ===================================================================
-   TIMER
-   =================================================================== */
-function startTimer() {
-    updateTimer();
-    timerHandle = setInterval(() => {
-        remaining = Math.max(0, remaining - 1);
-        updateTimer();
-        if (remaining <= 0) {
-            clearInterval(timerHandle);
-            doSubmit(true);
-        }
-    }, 1000);
-}
-
-function updateTimer() {
-    const m = Math.floor(remaining / 60).toString().padStart(2, '0');
-    const s = (remaining % 60).toString().padStart(2, '0');
-    const box = document.getElementById('timerBox');
-    box.textContent = `${m}:${s}`;
-    box.classList.toggle('timer-warn', remaining <= 60);
-}
-
-/* ===================================================================
-   SUBMIT
-   =================================================================== */
-async function doSubmit(forced = false) {
-    if (submitted) return;
-    if (!forced && !confirm('Imtihonni yakunlamoqchimisiz?')) return;
-    submitted = true;
-    if (timerHandle) clearInterval(timerHandle);
-
-    // flush remaining saves
-    await drainSaveQueue();
-
-    try {
-        const res = await api(`/api/exam/${EXAM_ID}/submit`, { method: 'POST', body: {} });
-        showResult(res);
-    } catch (err) {
-        alert('Yakunlashda xato: ' + err.message);
-        submitted = false;
-    }
-}
-
-function showResult(r) {
-    document.getElementById('resScore').textContent   = (r.score ?? 0).toFixed(1);
-    document.getElementById('resGrade').textContent   = r.grade ?? '—';
-    document.getElementById('resCorrect').textContent = r.correct_count ?? 0;
-    document.getElementById('resWrong').textContent   = r.wrong_count ?? 0;
-    document.getElementById('resSkipped').textContent = r.skipped_count ?? 0;
-
-    const box = document.getElementById('resSections');
-    box.innerHTML = '';
-    (r.section_analysis || []).forEach(s => {
-        const row = document.createElement('div');
-        row.className = 'brutal p-3 flex items-center gap-3';
-        row.innerHTML = `
-            <div class="mono uppercase tracking-widest text-xs flex-1">${escapeHtml(s.section)}</div>
-            <div class="mono text-xs">${s.correct}/${s.total}</div>
-            <div class="flex-1 brutal h-2"><div style="height:100%;background:#000;width:${s.percent}%;"></div></div>
-            <div class="mono font-extrabold text-sm w-14 text-right">${s.percent}%</div>
-            ${s.weakness ? '<span class="brutal px-2 py-0.5 mono text-[10px] uppercase">zaif</span>' : ''}
-        `;
-        box.appendChild(row);
-    });
-
-    const m = document.getElementById('resultModal');
-    m.classList.remove('hidden');
-    m.classList.add('flex');
-    if (document.fullscreenElement) document.exitFullscreen().catch(() => {});
-}
-
-/* ===================================================================
-   BUTTONS
-   =================================================================== */
-document.getElementById('prevBtn').addEventListener('click', () => renderQuestion(currentIdx - 1));
-document.getElementById('nextBtn').addEventListener('click', () => renderQuestion(currentIdx + 1));
-document.getElementById('submitBtn').addEventListener('click', () => doSubmit(false));
-document.getElementById('exitBtn').addEventListener('click', () => {
-    if (confirm('Imtihondan chiqsangiz, vaqt to\'xtamaydi. Davom etamizmi?')) {
-        if (document.fullscreenElement) document.exitFullscreen();
-        window.location.href = '/profile';
-    }
-});
-document.getElementById('flagBtn').addEventListener('click', () => {
-    const q = questions[currentIdx]; if (!q) return;
-    const a = answers[q.id] || { answer: null, flag: false };
-    a.flag = !a.flag;
-    answers[q.id] = a;
-    queueSave(q.id);
-    refreshNav();
-    renderQuestion(currentIdx);
-});
-
-document.addEventListener('keydown', (e) => {
-    if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
-    if (e.key === 'ArrowRight') renderQuestion(currentIdx + 1);
-    else if (e.key === 'ArrowLeft') renderQuestion(currentIdx - 1);
-    else if (e.key === 'f' || e.key === 'F') document.getElementById('flagBtn').click();
-});
-
-/* ===================================================================
-   VIRTUAL SCRATCHPAD (HTML5 Canvas)
-   =================================================================== */
-(function initCanvas() {
-    const canvas = document.getElementById('scratchPad');
-    const ctx = canvas.getContext('2d');
-    let drawing = false;
-    let mode = 'pen'; // 'pen' | 'erase'
-    let last = null;
-
-    function resize() {
-        const dpr = window.devicePixelRatio || 1;
-        const rect = canvas.getBoundingClientRect();
-        const img = canvas.width ? ctx.getImageData(0, 0, canvas.width, canvas.height) : null;
-        canvas.width  = rect.width  * dpr;
-        canvas.height = rect.height * dpr;
-        ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-        ctx.lineCap = 'round';
-        ctx.lineJoin = 'round';
-        if (img) ctx.putImageData(img, 0, 0);
-    }
-    resize();
-    window.addEventListener('resize', resize);
-
-    function pos(e) {
-        const r = canvas.getBoundingClientRect();
-        const t = (e.touches && e.touches[0]) || e;
-        return { x: t.clientX - r.left, y: t.clientY - r.top };
-    }
-
-    function start(e) {
-        e.preventDefault();
-        drawing = true;
-        last = pos(e);
-    }
-    function move(e) {
-        if (!drawing) return;
-        e.preventDefault();
-        const p = pos(e);
-        ctx.globalCompositeOperation = mode === 'erase' ? 'destination-out' : 'source-over';
-        ctx.strokeStyle = '#000';
-        ctx.lineWidth = mode === 'erase' ? 18 : 2;
-        ctx.beginPath();
-        ctx.moveTo(last.x, last.y);
-        ctx.lineTo(p.x, p.y);
-        ctx.stroke();
-        last = p;
-    }
-    function end() { drawing = false; last = null; }
-
-    canvas.addEventListener('mousedown', start);
-    canvas.addEventListener('mousemove', move);
-    window.addEventListener('mouseup', end);
-    canvas.addEventListener('touchstart', start, { passive: false });
-    canvas.addEventListener('touchmove',  move,  { passive: false });
-    canvas.addEventListener('touchend',   end);
-    canvas.addEventListener('pointerdown', start);
-    canvas.addEventListener('pointermove', move);
-    canvas.addEventListener('pointerup',   end);
-
-    document.getElementById('penBtn').addEventListener('click', () => {
-        mode = 'pen';
-        canvas.classList.remove('is-erasing');
-        document.getElementById('penInfo').textContent = 'Qalam · 2px';
-    });
-    document.getElementById('eraseBtn').addEventListener('click', () => {
-        mode = 'erase';
-        canvas.classList.add('is-erasing');
-        document.getElementById('penInfo').textContent = 'O\'chirgich · 18px';
-    });
-    document.getElementById('clearBtn').addEventListener('click', () => {
-        if (!confirm('Qoralamani tozalash?')) return;
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-    });
+// Canvas scratchpad
+(function(){
+    const canvas=document.getElementById('scratchPad'),ctx=canvas.getContext('2d');
+    let drawing=false,mode='pen',last=null;
+    function resize(){const dpr=window.devicePixelRatio||1,rect=canvas.getBoundingClientRect();canvas.width=rect.width*dpr;canvas.height=rect.height*dpr;ctx.setTransform(dpr,0,0,dpr,0,0);ctx.lineCap='round';ctx.lineJoin='round';}
+    resize();window.addEventListener('resize',resize);
+    function pos(e){const r=canvas.getBoundingClientRect(),t=(e.touches&&e.touches[0])||e;return{x:t.clientX-r.left,y:t.clientY-r.top};}
+    function start(e){e.preventDefault();drawing=true;last=pos(e);}
+    function move(e){if(!drawing)return;e.preventDefault();const p=pos(e);ctx.globalCompositeOperation=mode==='erase'?'destination-out':'source-over';ctx.strokeStyle='#0c4a6e';ctx.lineWidth=mode==='erase'?18:2;ctx.beginPath();ctx.moveTo(last.x,last.y);ctx.lineTo(p.x,p.y);ctx.stroke();last=p;}
+    function end(){drawing=false;last=null;}
+    canvas.addEventListener('mousedown',start);canvas.addEventListener('mousemove',move);window.addEventListener('mouseup',end);
+    canvas.addEventListener('touchstart',start,{passive:false});canvas.addEventListener('touchmove',move,{passive:false});canvas.addEventListener('touchend',end);
+    canvas.addEventListener('pointerdown',start);canvas.addEventListener('pointermove',move);canvas.addEventListener('pointerup',end);
+    document.getElementById('penBtn').addEventListener('click',()=>{mode='pen';canvas.classList.remove('erasing');document.getElementById('penInfo').textContent='Qalam · 2px';});
+    document.getElementById('eraseBtn').addEventListener('click',()=>{mode='erase';canvas.classList.add('erasing');document.getElementById('penInfo').textContent="O'chirgich · 18px";});
+    document.getElementById('clearBtn').addEventListener('click',()=>{if(!confirm('Tozalash?'))return;ctx.clearRect(0,0,canvas.width,canvas.height);});
 })();
 
-/* ===================================================================
-   UTILS
-   =================================================================== */
-function escapeHtml(s) {
-    return String(s ?? '').replace(/[&<>"']/g, c => ({
-        '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
-    }[c]));
-}
-
-window.addEventListener('beforeunload', (e) => {
-    if (!submitted) {
-        e.preventDefault();
-        e.returnValue = '';
-    }
-});
-
-/* ===================================================================
-   START
-   =================================================================== */
 goFullscreen();
 boot();
 </script>

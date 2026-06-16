@@ -9,653 +9,451 @@ use App\Core\Security;
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Kirish — Physics National Certificate</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;800&family=Inter:wght@300;400;500;700;900&display=swap" rel="stylesheet">
-    <style>
-        :root { --bd: 1px solid #000; }
-        html, body { background:#fff; color:#000; font-family:'Inter',sans-serif; }
-        .mono { font-family:'JetBrains Mono', monospace; letter-spacing:-.02em; }
-        .brutal { border: var(--bd); }
-        .brutal-thick { border: 2px solid #000; }
-        .hover-fill:hover { background:#f3f3f3; }
-        input, button { outline:none; }
-        input:focus { background:#fafafa; }
-        /* 3D flip wrapper */
-        .scene { perspective: 1600px; }
-        .flipper {
-            position:relative;
-            width:100%;
-            transform-style: preserve-3d;
-            transition: transform .85s cubic-bezier(.77,0,.18,1);
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        sky: { 50:'#f0f9ff', 100:'#e0f2fe', 200:'#bae6fd', 300:'#7dd3fc', 400:'#38bdf8', 500:'#0ea5e9', 600:'#0284c7', 700:'#0369a1', 800:'#075985', 900:'#0c4a6e' },
+                    }
+                }
+            }
         }
-        .flipper.is-register { transform: rotateY(180deg); }
-        .face { backface-visibility:hidden; -webkit-backface-visibility:hidden; }
-        .face.back { position:absolute; inset:0; transform: rotateY(180deg); }
-        .grid-divider > * + * { border-left: var(--bd); }
-        @media (max-width: 900px) {
-            .grid-divider > * + * { border-left:0; border-top: var(--bd); }
-        }
-        .ascii { white-space: pre; line-height:1.05; font-size:9px; }
-        @keyframes blink { 50% { opacity:0; } }
-        .cursor::after { content:"_"; animation: blink 1s steps(1) infinite; margin-left:2px; }
-        ::selection { background:#000; color:#fff; }
-        .btn-brutal {
-            border: 2px solid #000;
-            transition: all .15s;
-            font-weight:700;
-            letter-spacing:.04em;
-            text-transform:uppercase;
-        }
-        .btn-brutal:hover { background:#000; color:#fff; }
-        .btn-brutal:active { transform: translate(1px,1px); }
-        .field-row {
-            display:flex; align-items:center; gap:.75rem;
-            border-bottom: var(--bd);
-            padding:.85rem .25rem;
-        }
-        .field-row:last-child { border-bottom:0; }
-        .field-row input {
-            flex:1; background:transparent; border:0; padding:0;
-            font-size:1rem; color:#000;
-        }
-        .field-row label { width:90px; text-transform:uppercase; font-size:.7rem; font-weight:700; letter-spacing:.08em; }
-    </style>
+    </script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
 </head>
-<body class="min-h-screen flex items-center justify-center px-4 py-8">
+<body class="min-h-screen bg-white font-['Inter']">
 
-    <!-- Top brand bar -->
-    <header class="fixed top-0 left-0 right-0 brutal border-t-0 border-l-0 border-r-0 bg-white">
-        <div class="max-w-7xl mx-auto flex items-center justify-between px-6 py-3">
-            <div class="mono font-extrabold tracking-tight">PHYSICS&nbsp;//&nbsp;CERT</div>
-            <div class="text-xs uppercase tracking-widest mono">Milliy Sertifikat &middot; v1.0</div>
-        </div>
-    </header>
+<style>
+    ::selection { background: #0ea5e9; color: #fff; }
+    .glass { background: rgba(255,255,255,.85); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); }
+    .auth-card { box-shadow: 0 20px 60px rgba(14,165,233,.08), 0 1px 3px rgba(0,0,0,.04); }
+    .input-field {
+        border: 1.5px solid #e0f2fe;
+        border-radius: 12px;
+        padding: .8rem 1rem;
+        transition: all .2s;
+        background: #fff;
+        width: 100%;
+    }
+    .input-field:focus { border-color: #0ea5e9; box-shadow: 0 0 0 3px rgba(14,165,233,.1); outline: none; }
+    .btn-primary {
+        background: linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%);
+        color: #fff;
+        border: none;
+        border-radius: 12px;
+        padding: .85rem 1.5rem;
+        font-weight: 700;
+        font-size: .95rem;
+        cursor: pointer;
+        transition: all .2s;
+        width: 100%;
+    }
+    .btn-primary:hover { transform: translateY(-1px); box-shadow: 0 8px 25px rgba(14,165,233,.3); }
+    .btn-primary:active { transform: translateY(0); }
+    .btn-primary:disabled { opacity: .6; cursor: not-allowed; transform: none; }
+    .btn-outline {
+        border: 1.5px solid #bae6fd;
+        border-radius: 12px;
+        padding: .6rem 1.2rem;
+        font-weight: 600;
+        font-size: .85rem;
+        color: #0284c7;
+        cursor: pointer;
+        transition: all .2s;
+        background: transparent;
+    }
+    .btn-outline:hover { background: #f0f9ff; border-color: #0ea5e9; }
+    .flip-container { perspective: 1400px; }
+    .flipper { transition: transform .8s cubic-bezier(.4,.2,.2,1); transform-style: preserve-3d; position: relative; }
+    .flipper.flipped { transform: rotateY(180deg); }
+    .flip-face { backface-visibility: hidden; -webkit-backface-visibility: hidden; }
+    .flip-back { transform: rotateY(180deg); position: absolute; inset: 0; }
+    .otp-cell { width: 48px; height: 56px; border: 1.5px solid #e0f2fe; border-radius: 10px; text-align: center; font-size: 1.5rem; font-weight: 700; outline: none; transition: all .2s; }
+    .otp-cell:focus { border-color: #0ea5e9; box-shadow: 0 0 0 3px rgba(14,165,233,.1); }
+    @keyframes float { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-6px); } }
+    .float-anim { animation: float 3s ease-in-out infinite; }
+</style>
 
-    <!-- Main card -->
-    <main class="w-full max-w-5xl mt-20 scene">
-        <div class="flipper" id="flipper">
 
-            <!-- ============ FACE: LOGIN (front) ============ -->
-            <section class="face brutal-thick bg-white">
-                <div class="grid grid-cols-1 lg:grid-cols-2 grid-divider">
+<!-- Background decoration -->
+<div class="fixed inset-0 overflow-hidden pointer-events-none">
+    <div class="absolute -top-40 -right-40 w-[500px] h-[500px] rounded-full bg-sky-100/60 blur-3xl"></div>
+    <div class="absolute -bottom-40 -left-40 w-[400px] h-[400px] rounded-full bg-sky-50/80 blur-3xl"></div>
+    <div class="absolute top-1/3 left-1/4 w-[200px] h-[200px] rounded-full bg-sky-200/30 blur-2xl float-anim"></div>
+</div>
 
-                    <!-- LEFT: form -->
-                    <div class="p-8 lg:p-12">
-                        <div class="flex items-baseline justify-between mb-10">
-                            <h1 class="mono text-3xl font-extrabold cursor">[ KIRISH ]</h1>
-                            <span class="text-xs uppercase tracking-widest mono">01 / 02</span>
-                        </div>
+<div class="relative min-h-screen flex flex-col">
 
-                        <form id="loginForm" class="space-y-2" novalidate>
-                            <input type="hidden" name="_csrf" value="<?= Security::eAttr($csrfLogin) ?>">
-
-                            <div class="field-row">
-                                <label for="li_phone">Phone</label>
-                                <input id="li_phone" name="phone" type="tel"
-                                       placeholder="+998 90 123 45 67" autocomplete="tel" required>
-                            </div>
-                            <div class="field-row">
-                                <label for="li_pw">Parol</label>
-                                <input id="li_pw" name="password" type="password"
-                                       placeholder="••••••••" autocomplete="current-password" required>
-                                <button type="button" data-toggle="li_pw" class="text-xs uppercase mono hover-fill px-2 py-1 brutal">show</button>
-                            </div>
-
-                            <div id="li_err" class="hidden mt-4 brutal p-3 text-sm bg-white"></div>
-
-                            <div class="pt-8 flex items-center gap-4">
-                                <button type="submit" class="btn-brutal px-8 py-3 flex-1">→ Tizimga kirish</button>
-                            </div>
-                        </form>
-
-                        <div class="mt-10 pt-6 brutal border-l-0 border-r-0 border-b-0 flex items-center justify-between">
-                            <span class="text-sm">Hisobingiz yo'qmi?</span>
-                            <button type="button" id="toRegister" class="mono text-sm uppercase tracking-widest hover-fill brutal px-4 py-2">
-                                Ro'yxatdan o'tish &rarr;
-                            </button>
-                        </div>
-                    </div>
-
-                    <!-- RIGHT: brand panel -->
-                    <div class="p-8 lg:p-12 flex flex-col justify-between bg-white">
-                        <div>
-                            <div class="mono text-xs uppercase tracking-widest">Platform</div>
-                            <h2 class="mono text-5xl font-black leading-none mt-3">PHY&middot;CERT</h2>
-                            <p class="mt-6 leading-relaxed">
-                                Fizika fanidan Milliy Sertifikat platformasi. 30 savolli mock imtihonlar,
-                                BMBA metodologiyasi bo'yicha avtomatik baholash va bo'limlar bo'yicha tahlil.
-                            </p>
-                        </div>
-
-                        <div class="ascii mono mt-10 hidden lg:block">
-+----------------------------------+
-|     [F] = m * a                  |
-|     [E] = m * c^2                |
-|     [V] = I * R                  |
-|                                  |
-|   "Fizika - bu jismlar           |
-|    harakatining she'riyati."     |
-+----------------------------------+
-                        </div>
-
-                        <div class="mt-10 grid grid-cols-3 gap-3">
-                            <div class="brutal p-3 text-center">
-                                <div class="mono text-2xl font-extrabold">50K+</div>
-                                <div class="text-[10px] uppercase tracking-widest">Foydalanuvchi</div>
-                            </div>
-                            <div class="brutal p-3 text-center">
-                                <div class="mono text-2xl font-extrabold">120</div>
-                                <div class="text-[10px] uppercase tracking-widest">Mock Imtihon</div>
-                            </div>
-                            <div class="brutal p-3 text-center">
-                                <div class="mono text-2xl font-extrabold">99.9%</div>
-                                <div class="text-[10px] uppercase tracking-widest">Uptime</div>
-                            </div>
-                        </div>
-                    </div>
-
-                </div>
-            </section>
-
-            <!-- ============ FACE: REGISTER (back) ============ -->
-            <section class="face back brutal-thick bg-white">
-                <div class="grid grid-cols-1 lg:grid-cols-2 grid-divider">
-
-                    <!-- LEFT: brand panel mirrored -->
-                    <div class="p-8 lg:p-12 flex flex-col justify-between bg-white">
-                        <div>
-                            <div class="mono text-xs uppercase tracking-widest">Yangi hisob</div>
-                            <h2 class="mono text-5xl font-black leading-none mt-3">QO'SHILING.</h2>
-                            <p class="mt-6 leading-relaxed">
-                                Bir necha soniyada ro'yxatdan o'ting va birinchi mock imtihonni
-                                boshlang. Sizga hisob ID raqami avtomatik beriladi.
-                            </p>
-                        </div>
-
-                        <ul class="mt-10 space-y-2 text-sm">
-                            <li class="brutal p-3 hover-fill">[1] Telefon raqamingizni kiriting</li>
-                            <li class="brutal p-3 hover-fill">[2] Kuchli parol o'rnating (min 8 belgi)</li>
-                            <li class="brutal p-3 hover-fill">[3] Profilingizdan ID raqamingizni oling</li>
-                            <li class="brutal p-3 hover-fill">[4] Telegram bot orqali to'lov qiling</li>
-                        </ul>
-                    </div>
-
-                    <!-- RIGHT: register form (2 stages) -->
-                    <div class="p-8 lg:p-12">
-                        <div class="flex items-baseline justify-between mb-10">
-                            <h1 class="mono text-3xl font-extrabold cursor" id="rg_title">[ RO'YXAT ]</h1>
-                            <span class="text-xs uppercase tracking-widest mono" id="rg_step">02 / 02</span>
-                        </div>
-
-                        <!-- Stage A: form -->
-                        <form id="registerForm" class="space-y-2" novalidate data-stage="form">
-                            <input type="hidden" name="_csrf" value="<?= Security::eAttr($csrfRegister) ?>">
-
-                            <div class="field-row">
-                                <label for="rg_name">Ism</label>
-                                <input id="rg_name" name="fullname" type="text"
-                                       placeholder="Ism Familiya" autocomplete="name" required>
-                            </div>
-                            <div class="field-row">
-                                <label for="rg_phone">Phone</label>
-                                <input id="rg_phone" name="phone" type="tel"
-                                       placeholder="+998 90 123 45 67" autocomplete="tel" required>
-                            </div>
-                            <div class="field-row">
-                                <label for="rg_pw">Parol</label>
-                                <input id="rg_pw" name="password" type="password"
-                                       placeholder="kamida 8 belgi" autocomplete="new-password" required>
-                                <button type="button" data-toggle="rg_pw" class="text-xs uppercase mono hover-fill px-2 py-1 brutal">show</button>
-                            </div>
-
-                            <div id="rg_err" class="hidden mt-4 brutal p-3 text-sm bg-white"></div>
-
-                            <div class="pt-8 flex items-center gap-4">
-                                <button type="submit" class="btn-brutal px-8 py-3 flex-1">→ Davom etish</button>
-                            </div>
-
-                            <div class="mt-3 text-[10px] mono uppercase tracking-widest opacity-60 leading-relaxed">
-                                Telefoningizga 6 xonali tasdiqlash kodi yuboriladi.
-                            </div>
-                        </form>
-
-                        <!-- Stage B: OTP -->
-                        <form id="otpForm" class="space-y-4 hidden" novalidate data-stage="otp">
-                            <input type="hidden" name="_csrf" value="<?= Security::eAttr($csrfRegister) ?>">
-                            <input type="hidden" name="challenge_id" id="otp_challenge_id" value="">
-
-                            <div class="brutal p-4 text-sm leading-relaxed">
-                                Tasdiqlash kodi yuborildi:
-                                <span class="mono font-bold" id="otp_phone">—</span>
-                                <div class="text-[10px] mono uppercase tracking-widest opacity-60 mt-1">
-                                    Kodning amal qilish vaqti: <span id="otp_timer">5:00</span>
-                                </div>
-                            </div>
-
-                            <div>
-                                <label class="text-[10px] mono uppercase tracking-widest opacity-60">6 xonali kod</label>
-                                <div class="flex items-center gap-2 mt-2" id="otp_inputs">
-                                    <input type="text" inputmode="numeric" maxlength="1" class="otp-cell brutal text-center mono text-2xl font-extrabold" autocomplete="one-time-code">
-                                    <input type="text" inputmode="numeric" maxlength="1" class="otp-cell brutal text-center mono text-2xl font-extrabold">
-                                    <input type="text" inputmode="numeric" maxlength="1" class="otp-cell brutal text-center mono text-2xl font-extrabold">
-                                    <input type="text" inputmode="numeric" maxlength="1" class="otp-cell brutal text-center mono text-2xl font-extrabold">
-                                    <input type="text" inputmode="numeric" maxlength="1" class="otp-cell brutal text-center mono text-2xl font-extrabold">
-                                    <input type="text" inputmode="numeric" maxlength="1" class="otp-cell brutal text-center mono text-2xl font-extrabold">
-                                </div>
-                            </div>
-
-                            <div id="otp_err" class="hidden brutal p-3 text-sm bg-white"></div>
-
-                            <div class="pt-2 flex items-center gap-3 flex-wrap">
-                                <button type="submit" class="btn-brutal px-8 py-3 flex-1">→ Tasdiqlash</button>
-                                <button type="button" id="otp_resend"
-                                        class="brutal px-3 py-2 mono text-xs uppercase tracking-widest hover-fill"
-                                        disabled>
-                                    qayta yuborish (<span id="otp_resend_in">60</span>)
-                                </button>
-                                <button type="button" id="otp_back"
-                                        class="brutal px-3 py-2 mono text-xs uppercase tracking-widest hover-fill">
-                                    ← qaytish
-                                </button>
-                            </div>
-                        </form>
-
-                        <style>
-                            .otp-cell {
-                                width: 14%;
-                                aspect-ratio: 1/1;
-                                background:#fff;
-                                outline: none;
-                            }
-                            .otp-cell:focus { background:#fafafa; outline:2px solid #000; outline-offset:-2px; }
-                        </style>
-
-                        <div class="mt-10 pt-6 brutal border-l-0 border-r-0 border-b-0 flex items-center justify-between">
-                            <span class="text-sm">Hisobingiz bormi?</span>
-                            <button type="button" id="toLogin" class="mono text-sm uppercase tracking-widest hover-fill brutal px-4 py-2">
-                                &larr; Kirish
-                            </button>
-                        </div>
-                    </div>
-
-                </div>
-            </section>
-
-        </div>
-    </main>
-
-    <footer class="fixed bottom-0 left-0 right-0 brutal border-b-0 border-l-0 border-r-0 bg-white">
-        <div class="max-w-7xl mx-auto flex items-center justify-between px-6 py-2 text-[11px] mono uppercase tracking-widest">
-            <span>&copy; 2026 phys.cert</span>
-            <span>HTTPS / TLS 1.3 &middot; HSTS &middot; CSP enabled</span>
-        </div>
-    </footer>
-
-    <!-- ============ 2FA prompt overlay (admins) ============ -->
-    <div id="tfaOverlay" class="hidden fixed inset-0 items-center justify-center bg-black/40 z-50 px-4">
-        <div class="brutal-thick bg-white max-w-md w-full">
-            <div class="brutal border-l-0 border-r-0 border-t-0 px-5 py-4 flex items-center justify-between">
-                <div>
-                    <div class="text-xs uppercase tracking-widest mono opacity-60">Xavfsizlik</div>
-                    <h3 class="mono text-2xl font-extrabold leading-none">[ 2FA TASDIQ ]</h3>
-                </div>
-                <span class="brutal px-2 py-0.5 mono text-xs" id="tfaTimer">5:00</span>
+<!-- Header / Logo Banner -->
+<header class="w-full py-5 px-6">
+    <div class="max-w-6xl mx-auto flex items-center justify-between">
+        <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-sky-400 to-sky-600 flex items-center justify-center shadow-lg shadow-sky-200">
+                <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
+                </svg>
             </div>
-            <form id="tfaForm" class="p-6 space-y-4" novalidate>
-                <p class="text-sm leading-relaxed">
-                    Authenticator ilovangizdagi 6 xonali kodni kiriting yoki
-                    <span class="brutal px-1">recovery code</span> ishlating.
-                </p>
-                <div class="field-row">
-                    <label for="tfaCode">Kod</label>
-                    <input id="tfaCode" type="text" inputmode="numeric"
-                           autocomplete="one-time-code"
-                           placeholder="123 456  yoki 1234-5678"
-                           maxlength="9">
-                </div>
-                <div id="tfaErr" class="hidden brutal p-3 text-sm bg-white"></div>
-                <div class="pt-2 flex items-center gap-3">
-                    <button type="submit" class="btn-brutal flex-1 px-6 py-3">→ Tasdiqlash</button>
-                    <button type="button" id="tfaCancel"
-                            class="brutal px-4 py-2 mono text-xs uppercase tracking-widest hover-fill">
-                        bekor qilish
-                    </button>
-                </div>
-                <div class="mt-2 text-[10px] mono uppercase tracking-widest opacity-60 leading-relaxed">
-                    Authenticator (Google / Authy / Aegis / 1Password) yoki
-                    enrollment paytida saqlangan recovery code.
-                </div>
-            </form>
+            <div>
+                <div class="text-lg font-bold text-gray-900 leading-tight">Physics Cert</div>
+                <div class="text-[11px] text-sky-600 font-medium tracking-wide">Milliy Sertifikat Platformasi</div>
+            </div>
+        </div>
+        <div class="hidden sm:flex items-center gap-2 text-xs text-gray-400">
+            <span class="inline-flex items-center gap-1 bg-sky-50 text-sky-700 px-2.5 py-1 rounded-full font-medium">
+                <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clip-rule="evenodd"/></svg>
+                SSL Himoyalangan
+            </span>
         </div>
     </div>
+</header>
 
-    <script>
-        // ===== Flip control =====
-        const flipper = document.getElementById('flipper');
-        document.getElementById('toRegister').addEventListener('click', () => {
-            flipper.classList.add('is-register');
-            setTimeout(() => document.getElementById('rg_name').focus(), 600);
+<!-- Main content -->
+<main class="flex-1 flex items-center justify-center px-4 py-8">
+    <div class="w-full max-w-[480px] flip-container">
+        <div class="flipper" id="flipper">
+
+
+            <!-- ======== LOGIN FACE ======== -->
+            <div class="flip-face">
+                <div class="auth-card bg-white rounded-2xl border border-sky-100 p-8 sm:p-10">
+                    <!-- Logo area -->
+                    <div class="text-center mb-8">
+                        <div class="w-16 h-16 mx-auto rounded-2xl bg-gradient-to-br from-sky-400 to-sky-600 flex items-center justify-center shadow-lg shadow-sky-200 mb-4">
+                            <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
+                            </svg>
+                        </div>
+                        <h1 class="text-2xl font-bold text-gray-900">Tizimga kirish</h1>
+                        <p class="text-sm text-gray-500 mt-1">Physics Cert hisobingizga kiring</p>
+                    </div>
+
+                    <form id="loginForm" class="space-y-5" novalidate>
+                        <input type="hidden" name="_csrf" value="<?= Security::eAttr($csrfLogin) ?>">
+
+                        <div>
+                            <label class="block text-xs font-semibold text-gray-600 mb-1.5 uppercase tracking-wider">Telefon raqam</label>
+                            <input id="li_phone" name="phone" type="tel" class="input-field"
+                                   placeholder="+998 90 123 45 67" autocomplete="tel" required>
+                        </div>
+
+                        <div>
+                            <label class="block text-xs font-semibold text-gray-600 mb-1.5 uppercase tracking-wider">Parol</label>
+                            <div class="relative">
+                                <input id="li_pw" name="password" type="password" class="input-field pr-16"
+                                       placeholder="Parolingiz" autocomplete="current-password" required>
+                                <button type="button" data-toggle="li_pw"
+                                    class="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-semibold text-sky-600 hover:text-sky-800 transition">
+                                    Ko'rish
+                                </button>
+                            </div>
+                        </div>
+
+                        <div id="li_err" class="hidden rounded-xl bg-red-50 border border-red-100 text-red-700 text-sm p-3"></div>
+
+                        <button type="submit" class="btn-primary mt-2">Kirish</button>
+                    </form>
+
+                    <div class="mt-8 pt-6 border-t border-sky-50 flex items-center justify-between">
+                        <span class="text-sm text-gray-500">Hisobingiz yo'qmi?</span>
+                        <button type="button" id="toRegister" class="btn-outline">
+                            Ro'yxatdan o'tish
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+
+            <!-- ======== REGISTER FACE ======== -->
+            <div class="flip-face flip-back">
+                <div class="auth-card bg-white rounded-2xl border border-sky-100 p-8 sm:p-10">
+                    <div class="text-center mb-8">
+                        <div class="w-16 h-16 mx-auto rounded-2xl bg-gradient-to-br from-sky-400 to-sky-600 flex items-center justify-center shadow-lg shadow-sky-200 mb-4">
+                            <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"/>
+                            </svg>
+                        </div>
+                        <h1 class="text-2xl font-bold text-gray-900" id="rg_title">Ro'yxatdan o'tish</h1>
+                        <p class="text-sm text-gray-500 mt-1" id="rg_subtitle">Yangi hisob yaratish</p>
+                    </div>
+
+                    <!-- Stage A: Form -->
+                    <form id="registerForm" class="space-y-5" novalidate>
+                        <input type="hidden" name="_csrf" value="<?= Security::eAttr($csrfRegister) ?>">
+
+                        <div>
+                            <label class="block text-xs font-semibold text-gray-600 mb-1.5 uppercase tracking-wider">Ism Familiya</label>
+                            <input id="rg_name" name="fullname" type="text" class="input-field"
+                                   placeholder="Ism Familiya" autocomplete="name" required>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-gray-600 mb-1.5 uppercase tracking-wider">Telefon raqam</label>
+                            <input id="rg_phone" name="phone" type="tel" class="input-field"
+                                   placeholder="+998 90 123 45 67" autocomplete="tel" required>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-gray-600 mb-1.5 uppercase tracking-wider">Parol</label>
+                            <div class="relative">
+                                <input id="rg_pw" name="password" type="password" class="input-field pr-16"
+                                       placeholder="Kamida 8 belgi" autocomplete="new-password" required>
+                                <button type="button" data-toggle="rg_pw"
+                                    class="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-semibold text-sky-600 hover:text-sky-800 transition">
+                                    Ko'rish
+                                </button>
+                            </div>
+                        </div>
+
+                        <div id="rg_err" class="hidden rounded-xl bg-red-50 border border-red-100 text-red-700 text-sm p-3"></div>
+
+                        <button type="submit" class="btn-primary">Davom etish</button>
+                        <p class="text-center text-[11px] text-gray-400">Telefoningizga 6 xonali tasdiqlash kodi yuboriladi</p>
+                    </form>
+
+                    <!-- Stage B: OTP -->
+                    <form id="otpForm" class="space-y-5 hidden" novalidate>
+                        <input type="hidden" name="_csrf" value="<?= Security::eAttr($csrfRegister) ?>">
+                        <input type="hidden" name="challenge_id" id="otp_challenge_id" value="">
+
+                        <div class="bg-sky-50 rounded-xl p-4 text-center">
+                            <p class="text-sm text-gray-700">Kod yuborildi: <strong class="text-sky-700" id="otp_phone">—</strong></p>
+                            <p class="text-xs text-gray-500 mt-1">Amal qilish: <span id="otp_timer" class="font-bold text-sky-600">5:00</span></p>
+                        </div>
+
+                        <div class="flex justify-center gap-2" id="otp_inputs">
+                            <input type="text" inputmode="numeric" maxlength="1" class="otp-cell">
+                            <input type="text" inputmode="numeric" maxlength="1" class="otp-cell">
+                            <input type="text" inputmode="numeric" maxlength="1" class="otp-cell">
+                            <input type="text" inputmode="numeric" maxlength="1" class="otp-cell">
+                            <input type="text" inputmode="numeric" maxlength="1" class="otp-cell">
+                            <input type="text" inputmode="numeric" maxlength="1" class="otp-cell">
+                        </div>
+
+                        <div id="otp_err" class="hidden rounded-xl bg-red-50 border border-red-100 text-red-700 text-sm p-3"></div>
+
+                        <button type="submit" class="btn-primary">Tasdiqlash</button>
+
+                        <div class="flex items-center justify-between">
+                            <button type="button" id="otp_resend" class="btn-outline text-xs" disabled>
+                                Qayta yuborish (<span id="otp_resend_in">60</span>s)
+                            </button>
+                            <button type="button" id="otp_back" class="text-xs text-gray-500 hover:text-sky-600 font-medium transition">
+                                ← Qaytish
+                            </button>
+                        </div>
+                    </form>
+
+                    <div class="mt-8 pt-6 border-t border-sky-50 flex items-center justify-between">
+                        <span class="text-sm text-gray-500">Hisobingiz bormi?</span>
+                        <button type="button" id="toLogin" class="btn-outline">Kirish</button>
+                    </div>
+                </div>
+            </div>
+
+
+        </div><!-- /flipper -->
+    </div>
+</main>
+
+<!-- Footer -->
+<footer class="py-4 text-center text-xs text-gray-400">
+    &copy; 2026 Physics Cert &middot; Barcha huquqlar himoyalangan
+</footer>
+
+</div><!-- /relative -->
+
+<!-- ============ 2FA Overlay ============ -->
+<div id="tfaOverlay" class="hidden fixed inset-0 items-center justify-center bg-black/30 backdrop-blur-sm z-50 px-4">
+    <div class="bg-white rounded-2xl border border-sky-100 auth-card max-w-md w-full p-8">
+        <div class="text-center mb-6">
+            <div class="w-14 h-14 mx-auto rounded-xl bg-sky-50 flex items-center justify-center mb-3">
+                <svg class="w-7 h-7 text-sky-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
+                </svg>
+            </div>
+            <h3 class="text-xl font-bold text-gray-900">Ikki bosqichli tasdiqlash</h3>
+            <p class="text-sm text-gray-500 mt-1">Authenticator kodingizni kiriting</p>
+            <span class="inline-block mt-2 bg-sky-50 text-sky-700 text-xs font-bold px-3 py-1 rounded-full" id="tfaTimer">5:00</span>
+        </div>
+        <form id="tfaForm" class="space-y-4" novalidate>
+            <input id="tfaCode" type="text" inputmode="numeric" class="input-field text-center text-2xl font-bold tracking-[.3em]"
+                   autocomplete="one-time-code" placeholder="000000" maxlength="9">
+            <div id="tfaErr" class="hidden rounded-xl bg-red-50 border border-red-100 text-red-700 text-sm p-3"></div>
+            <button type="submit" class="btn-primary">Tasdiqlash</button>
+            <button type="button" id="tfaCancel" class="w-full text-center text-sm text-gray-500 hover:text-sky-600 font-medium transition py-2">
+                Bekor qilish
+            </button>
+        </form>
+    </div>
+</div>
+
+
+<script>
+'use strict';
+// ===== Flip control =====
+const flipper = document.getElementById('flipper');
+document.getElementById('toRegister').addEventListener('click', () => {
+    flipper.classList.add('flipped');
+    setTimeout(() => document.getElementById('rg_name').focus(), 500);
+});
+document.getElementById('toLogin').addEventListener('click', () => {
+    flipper.classList.remove('flipped');
+    setTimeout(() => document.getElementById('li_phone').focus(), 500);
+});
+
+// ===== Password toggle =====
+document.querySelectorAll('[data-toggle]').forEach(btn => {
+    btn.addEventListener('click', () => {
+        const inp = document.getElementById(btn.dataset.toggle);
+        inp.type = inp.type === 'password' ? 'text' : 'password';
+        btn.textContent = inp.type === 'password' ? "Ko'rish" : 'Yashirish';
+    });
+});
+
+// ===== Helpers =====
+function showError(id, msg) { const el = document.getElementById(id); el.textContent = msg; el.classList.remove('hidden'); }
+function hideError(id) { document.getElementById(id).classList.add('hidden'); }
+function setBusy(form, busy) {
+    const btn = form.querySelector('button[type=submit]');
+    btn.disabled = busy; btn.style.opacity = busy ? .6 : 1;
+}
+
+// ===== LOGIN =====
+document.getElementById('loginForm').addEventListener('submit', async (e) => {
+    e.preventDefault(); hideError('li_err');
+    const form = e.currentTarget;
+    const data = Object.fromEntries(new FormData(form).entries());
+    setBusy(form, true);
+    try {
+        const res = await fetch('/api/auth/login', {
+            method:'POST',
+            headers:{'Content-Type':'application/json','X-CSRF-Token':data._csrf,'X-Requested-With':'XMLHttpRequest'},
+            body: JSON.stringify(data),
         });
-        document.getElementById('toLogin').addEventListener('click', () => {
-            flipper.classList.remove('is-register');
-            setTimeout(() => document.getElementById('li_phone').focus(), 600);
-        });
+        const fresh = res.headers.get('X-CSRF-Token');
+        if (fresh) form.querySelector('input[name=_csrf]').value = fresh;
+        const json = await res.json();
+        if (!res.ok) throw new Error(json.error || 'Login failed');
+        if (json?.data?.requires_2fa) { show2faPrompt(json.data.partial_token, json.data.expires_in||300); return; }
+        window.location.href = (json?.data?.role === 'admin') ? '/admin' : '/profile';
+    } catch (err) { showError('li_err', err.message); }
+    finally { setBusy(form, false); }
+});
 
-        // ===== Password show/hide =====
-        document.querySelectorAll('[data-toggle]').forEach(btn => {
-            btn.addEventListener('click', () => {
-                const id = btn.getAttribute('data-toggle');
-                const inp = document.getElementById(id);
-                inp.type = inp.type === 'password' ? 'text' : 'password';
-                btn.textContent = inp.type === 'password' ? 'show' : 'hide';
-            });
-        });
+// ===== 2FA =====
+let _2faPartial = null, _2faTimer = null;
+function show2faPrompt(token, exp) {
+    _2faPartial = token;
+    document.getElementById('tfaOverlay').classList.remove('hidden');
+    document.getElementById('tfaOverlay').classList.add('flex');
+    document.getElementById('tfaCode').focus();
+    let rem = exp;
+    const tick = () => { rem--; const m=Math.floor(rem/60).toString().padStart(2,'0'); const s=(rem%60).toString().padStart(2,'0'); document.getElementById('tfaTimer').textContent=m+':'+s; if(rem<=0)clearInterval(_2faTimer); };
+    tick(); _2faTimer = setInterval(tick, 1000);
+}
+document.getElementById('tfaForm')?.addEventListener('submit', async (e) => {
+    e.preventDefault(); hideError('tfaErr');
+    const code = document.getElementById('tfaCode').value.trim();
+    if (!code) return showError('tfaErr','Kod kiriting');
+    try {
+        const res = await fetch('/api/auth/login/verify-2fa', { method:'POST', headers:{'Content-Type':'application/json','X-Requested-With':'XMLHttpRequest'}, body:JSON.stringify({partial_token:_2faPartial,code}) });
+        const json = await res.json(); if(!res.ok) throw new Error(json.error||'Failed');
+        window.location.href = (json?.data?.role === 'admin') ? '/admin' : '/profile';
+    } catch(err) { showError('tfaErr', err.message); }
+});
+document.getElementById('tfaCancel')?.addEventListener('click', () => {
+    document.getElementById('tfaOverlay').classList.add('hidden');
+    document.getElementById('tfaOverlay').classList.remove('flex');
+    if(_2faTimer) clearInterval(_2faTimer);
+});
 
-        // ===== Helpers =====
-        function showError(boxId, message) {
-            const el = document.getElementById(boxId);
-            el.textContent = message;
-            el.classList.remove('hidden');
-        }
-        function hideError(boxId) {
-            document.getElementById(boxId).classList.add('hidden');
-        }
-        function setBusy(form, busy) {
-            const btn = form.querySelector('button[type=submit]');
-            btn.disabled = busy;
-            btn.style.opacity = busy ? .5 : 1;
-            btn.style.cursor = busy ? 'wait' : 'pointer';
-        }
 
-        // ===== LOGIN =====
-        document.getElementById('loginForm').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            hideError('li_err');
-            const form = e.currentTarget;
-            const data = Object.fromEntries(new FormData(form).entries());
-            setBusy(form, true);
-            try {
-                const res = await fetch('/api/auth/login', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-CSRF-Token': data._csrf,
-                        'X-Requested-With': 'XMLHttpRequest',
-                    },
-                    body: JSON.stringify(data),
-                });
-                // Rolling CSRF: replace stale token regardless of outcome
-                const fresh = res.headers.get('X-CSRF-Token');
-                if (fresh) form.querySelector('input[name=_csrf]').value = fresh;
+// ===== REGISTER (OTP flow) =====
+let registrationData = null, otpExpiresAt = 0, otpTimerH = null, resendH = null;
 
-                const json = await res.json();
-                if (!res.ok) throw new Error(json.error || 'Login failed');
+function showOtpStage(meta, formData) {
+    registrationData = formData;
+    document.getElementById('registerForm').classList.add('hidden');
+    document.getElementById('otpForm').classList.remove('hidden');
+    document.getElementById('rg_title').textContent = 'Tasdiqlash kodi';
+    document.getElementById('rg_subtitle').textContent = 'SMS orqali yuborilgan kodni kiriting';
+    document.getElementById('otp_phone').textContent = meta.phone_masked || '';
+    document.getElementById('otp_challenge_id').value = meta.challenge_id;
+    otpExpiresAt = Date.now() + ((meta.expires_in||300)*1000);
+    startOtpTimer(); startResendCooldown(60);
+    document.querySelectorAll('.otp-cell').forEach(c=>(c.value='')); document.querySelector('.otp-cell')?.focus();
+}
+function showFormStage() {
+    document.getElementById('otpForm').classList.add('hidden');
+    document.getElementById('registerForm').classList.remove('hidden');
+    document.getElementById('rg_title').textContent = "Ro'yxatdan o'tish";
+    document.getElementById('rg_subtitle').textContent = 'Yangi hisob yaratish';
+    if(otpTimerH) clearInterval(otpTimerH); if(resendH) clearInterval(resendH);
+}
+function startOtpTimer() {
+    if(otpTimerH) clearInterval(otpTimerH);
+    const tick = () => { const r=Math.max(0,Math.floor((otpExpiresAt-Date.now())/1000)); document.getElementById('otp_timer').textContent=Math.floor(r/60).toString().padStart(2,'0')+':'+(r%60).toString().padStart(2,'0'); if(r<=0){clearInterval(otpTimerH);showError('otp_err','Kod muddati tugadi');} };
+    tick(); otpTimerH = setInterval(tick, 500);
+}
+function startResendCooldown(s) {
+    const btn=document.getElementById('otp_resend'), sp=document.getElementById('otp_resend_in');
+    btn.disabled=true; let left=s; sp.textContent=left;
+    if(resendH) clearInterval(resendH);
+    resendH = setInterval(()=>{ left--; sp.textContent=left; if(left<=0){clearInterval(resendH); btn.disabled=false; btn.innerHTML='Qayta yuborish';} }, 1000);
+}
 
-                // 2FA gate: if response demands 2FA, reveal the prompt instead of redirecting.
-                if (json?.data?.requires_2fa) {
-                    show2faPrompt(json.data.partial_token, json.data.expires_in || 300);
-                    return;
-                }
+// OTP cells auto-advance
+const otpCells = document.querySelectorAll('.otp-cell');
+otpCells.forEach((c,i) => {
+    c.addEventListener('input', () => { c.value=c.value.replace(/\D/g,'').slice(0,1); if(c.value&&i<otpCells.length-1) otpCells[i+1].focus(); });
+    c.addEventListener('keydown', (e) => { if(e.key==='Backspace'&&!c.value&&i>0) otpCells[i-1].focus(); });
+    c.addEventListener('paste', (e) => { e.preventDefault(); const t=(e.clipboardData?.getData('text')||'').replace(/\D/g,'').slice(0,6); t.split('').forEach((d,k)=>{if(otpCells[k])otpCells[k].value=d;}); otpCells[Math.min(t.length,otpCells.length-1)].focus(); });
+});
 
-                const role = json?.data?.role || 'student';
-                window.location.href = role === 'admin' ? '/admin' : '/profile';
-            } catch (err) {
-                showError('li_err', err.message);
-            } finally {
-                setBusy(form, false);
-            }
-        });
+document.getElementById('registerForm').addEventListener('submit', async (e) => {
+    e.preventDefault(); hideError('rg_err');
+    const form = e.currentTarget; const data = Object.fromEntries(new FormData(form).entries());
+    setBusy(form, true);
+    try {
+        const res = await fetch('/api/auth/register', { method:'POST', headers:{'Content-Type':'application/json','X-CSRF-Token':data._csrf,'X-Requested-With':'XMLHttpRequest'}, body:JSON.stringify(data) });
+        const fresh = res.headers.get('X-CSRF-Token');
+        if(fresh){form.querySelector('input[name=_csrf]').value=fresh; document.getElementById('otpForm').querySelector('input[name=_csrf]').value=fresh;}
+        const json = await res.json(); if(!res.ok) throw new Error(json.error||'Failed');
+        showOtpStage(json.data, data);
+    } catch(err) { showError('rg_err', err.message); }
+    finally { setBusy(form, false); }
+});
 
-        // ===== 2FA PROMPT (admins) =====
-        let _2faPartial = null;
-        let _2faTimer   = null;
-        function show2faPrompt(partialToken, expiresIn) {
-            _2faPartial = partialToken;
-            // Hide the login form and show the 2FA prompt overlay
-            const overlay = document.getElementById('tfaOverlay');
-            overlay.classList.remove('hidden');
-            overlay.classList.add('flex');
-            document.querySelector('#tfaCode').focus();
+document.getElementById('otpForm').addEventListener('submit', async (e) => {
+    e.preventDefault(); hideError('otp_err');
+    const form = e.currentTarget;
+    const code = Array.from(otpCells).map(c=>c.value||'').join('');
+    if(code.length!==6) return showError('otp_err',"6 xonali kodni to'liq kiriting");
+    setBusy(form, true);
+    try {
+        const csrf = form.querySelector('input[name=_csrf]').value;
+        const res = await fetch('/api/auth/register/verify', { method:'POST', headers:{'Content-Type':'application/json','X-CSRF-Token':csrf,'X-Requested-With':'XMLHttpRequest'}, body:JSON.stringify({_csrf:csrf, challenge_id:parseInt(document.getElementById('otp_challenge_id').value,10), code}) });
+        const fresh=res.headers.get('X-CSRF-Token'); if(fresh) form.querySelector('input[name=_csrf]').value=fresh;
+        const json=await res.json(); if(!res.ok) throw new Error(json.error||'Failed');
+        window.location.href='/profile';
+    } catch(err) { showError('otp_err', err.message); }
+    finally { setBusy(form, false); }
+});
 
-            // Countdown
-            let remaining = expiresIn;
-            const tEl = document.getElementById('tfaTimer');
-            const tick = () => {
-                if (--remaining <= 0) {
-                    clearInterval(_2faTimer);
-                    showError('tfaErr', 'Sessiya muddati o\'tdi. Qaytadan kirishga urinib ko\'ring.');
-                    return;
-                }
-                const m = Math.floor(remaining / 60).toString().padStart(2, '0');
-                const s = (remaining % 60).toString().padStart(2, '0');
-                tEl.textContent = `${m}:${s}`;
-            };
-            tick();
-            if (_2faTimer) clearInterval(_2faTimer);
-            _2faTimer = setInterval(tick, 1000);
-        }
+document.getElementById('otp_back').addEventListener('click', showFormStage);
+document.getElementById('otp_resend').addEventListener('click', async () => {
+    if(!registrationData) return; hideError('otp_err');
+    const csrf = document.getElementById('otpForm').querySelector('input[name=_csrf]').value;
+    try {
+        const res = await fetch('/api/auth/register/resend', { method:'POST', headers:{'Content-Type':'application/json','X-CSRF-Token':csrf,'X-Requested-With':'XMLHttpRequest'}, body:JSON.stringify(Object.assign({},registrationData,{_csrf:csrf})) });
+        const fresh=res.headers.get('X-CSRF-Token'); if(fresh) document.getElementById('otpForm').querySelector('input[name=_csrf]').value=fresh;
+        const json=await res.json(); if(!res.ok) throw new Error(json.error||'Failed');
+        document.getElementById('otp_challenge_id').value=json.data.challenge_id;
+        otpExpiresAt=Date.now()+((json.data.expires_in||300)*1000); startOtpTimer(); startResendCooldown(60);
+        otpCells.forEach(c=>(c.value='')); otpCells[0]?.focus();
+    } catch(err) { showError('otp_err', err.message); }
+});
 
-        document.getElementById('tfaForm')?.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            hideError('tfaErr');
-            const code = document.getElementById('tfaCode').value.trim();
-            if (!code) return showError('tfaErr', 'Kod kiriting');
-            try {
-                const res = await fetch('/api/auth/login/verify-2fa', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-Requested-With': 'XMLHttpRequest',
-                    },
-                    body: JSON.stringify({ partial_token: _2faPartial, code }),
-                });
-                const json = await res.json();
-                if (!res.ok) throw new Error(json.error || 'Verification failed');
-                const role = json?.data?.role || 'student';
-                window.location.href = role === 'admin' ? '/admin' : '/profile';
-            } catch (err) {
-                showError('tfaErr', err.message);
-            }
-        });
-
-        document.getElementById('tfaCancel')?.addEventListener('click', () => {
-            const overlay = document.getElementById('tfaOverlay');
-            overlay.classList.add('hidden');
-            overlay.classList.remove('flex');
-            if (_2faTimer) clearInterval(_2faTimer);
-            _2faPartial = null;
-            document.getElementById('tfaCode').value = '';
-        });
-
-        // ===== REGISTER (Stage A: form → OTP) =====
-        let registrationData = null;       // cached payload for resend
-        let otpExpiresAt     = 0;
-        let otpTimerHandle   = null;
-        let resendInHandle   = null;
-
-        function showOtpStage(meta, formData) {
-            registrationData = formData;
-            document.getElementById('registerForm').classList.add('hidden');
-            const otpForm = document.getElementById('otpForm');
-            otpForm.classList.remove('hidden');
-            document.getElementById('rg_title').textContent = '[ TASDIQLASH ]';
-            document.getElementById('rg_step').textContent  = 'KOD KIRITING';
-            document.getElementById('otp_phone').textContent = meta.phone_masked || '';
-            document.getElementById('otp_challenge_id').value = meta.challenge_id;
-
-            // Start timers
-            otpExpiresAt = Date.now() + ((meta.expires_in || 300) * 1000);
-            startOtpTimer();
-            startResendCooldown(60);
-
-            const cells = document.querySelectorAll('.otp-cell');
-            cells.forEach(c => (c.value = ''));
-            cells[0]?.focus();
-        }
-
-        function showFormStage() {
-            document.getElementById('otpForm').classList.add('hidden');
-            document.getElementById('registerForm').classList.remove('hidden');
-            document.getElementById('rg_title').textContent = "[ RO'YXAT ]";
-            document.getElementById('rg_step').textContent  = '02 / 02';
-            if (otpTimerHandle) clearInterval(otpTimerHandle);
-            if (resendInHandle) clearInterval(resendInHandle);
-        }
-
-        function startOtpTimer() {
-            if (otpTimerHandle) clearInterval(otpTimerHandle);
-            const tick = () => {
-                const remaining = Math.max(0, Math.floor((otpExpiresAt - Date.now()) / 1000));
-                const m = Math.floor(remaining / 60).toString().padStart(2, '0');
-                const s = (remaining % 60).toString().padStart(2, '0');
-                document.getElementById('otp_timer').textContent = `${m}:${s}`;
-                if (remaining <= 0) {
-                    clearInterval(otpTimerHandle);
-                    showError('otp_err', 'Kod muddati tugadi. Qayta yuboring.');
-                }
-            };
-            tick();
-            otpTimerHandle = setInterval(tick, 500);
-        }
-
-        function startResendCooldown(seconds) {
-            const btn = document.getElementById('otp_resend');
-            const span = document.getElementById('otp_resend_in');
-            btn.disabled = true; btn.style.opacity = .5;
-            let left = seconds;
-            span.textContent = left;
-            if (resendInHandle) clearInterval(resendInHandle);
-            resendInHandle = setInterval(() => {
-                left -= 1; span.textContent = left;
-                if (left <= 0) {
-                    clearInterval(resendInHandle);
-                    btn.disabled = false; btn.style.opacity = 1;
-                    btn.innerHTML = 'qayta yuborish';
-                }
-            }, 1000);
-        }
-
-        // OTP cell auto-advance + paste
-        const otpCells = document.querySelectorAll('.otp-cell');
-        otpCells.forEach((cell, i) => {
-            cell.addEventListener('input', (e) => {
-                cell.value = cell.value.replace(/\D/g, '').slice(0, 1);
-                if (cell.value && i < otpCells.length - 1) otpCells[i + 1].focus();
-            });
-            cell.addEventListener('keydown', (e) => {
-                if (e.key === 'Backspace' && !cell.value && i > 0) otpCells[i - 1].focus();
-            });
-            cell.addEventListener('paste', (e) => {
-                e.preventDefault();
-                const txt = (e.clipboardData?.getData('text') || '').replace(/\D/g, '').slice(0, 6);
-                txt.split('').forEach((d, k) => { if (otpCells[k]) otpCells[k].value = d; });
-                otpCells[Math.min(txt.length, otpCells.length - 1)].focus();
-            });
-        });
-
-        document.getElementById('registerForm').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            hideError('rg_err');
-            const form = e.currentTarget;
-            const data = Object.fromEntries(new FormData(form).entries());
-            setBusy(form, true);
-            try {
-                const res = await fetch('/api/auth/register', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-CSRF-Token': data._csrf,
-                        'X-Requested-With': 'XMLHttpRequest',
-                    },
-                    body: JSON.stringify(data),
-                });
-                const fresh = res.headers.get('X-CSRF-Token');
-                if (fresh) {
-                    form.querySelector('input[name=_csrf]').value = fresh;
-                    document.getElementById('otpForm').querySelector('input[name=_csrf]').value = fresh;
-                }
-                const json = await res.json();
-                if (!res.ok) throw new Error(json.error || 'Registration failed');
-                showOtpStage(json.data, data);
-            } catch (err) {
-                showError('rg_err', err.message);
-            } finally {
-                setBusy(form, false);
-            }
-        });
-
-        // ===== REGISTER (Stage B: OTP verify) =====
-        document.getElementById('otpForm').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            hideError('otp_err');
-            const form = e.currentTarget;
-            const code = Array.from(otpCells).map(c => c.value || '').join('');
-            if (code.length !== 6) {
-                showError('otp_err', 'Iltimos 6 xonali kodni to\'liq kiriting');
-                return;
-            }
-            setBusy(form, true);
-            try {
-                const csrf = form.querySelector('input[name=_csrf]').value;
-                const res = await fetch('/api/auth/register/verify', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-CSRF-Token': csrf,
-                        'X-Requested-With': 'XMLHttpRequest',
-                    },
-                    body: JSON.stringify({
-                        _csrf: csrf,
-                        challenge_id: parseInt(document.getElementById('otp_challenge_id').value, 10),
-                        code,
-                    }),
-                });
-                const fresh = res.headers.get('X-CSRF-Token');
-                if (fresh) form.querySelector('input[name=_csrf]').value = fresh;
-                const json = await res.json();
-                if (!res.ok) throw new Error(json.error || 'Verification failed');
-                window.location.href = '/profile';
-            } catch (err) {
-                showError('otp_err', err.message);
-            } finally {
-                setBusy(form, false);
-            }
-        });
-
-        document.getElementById('otp_back').addEventListener('click', showFormStage);
-
-        document.getElementById('otp_resend').addEventListener('click', async () => {
-            if (!registrationData) return;
-            hideError('otp_err');
-            const otpForm = document.getElementById('otpForm');
-            const csrf = otpForm.querySelector('input[name=_csrf]').value;
-            try {
-                const res = await fetch('/api/auth/register/resend', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-CSRF-Token': csrf,
-                        'X-Requested-With': 'XMLHttpRequest',
-                    },
-                    body: JSON.stringify(Object.assign({}, registrationData, { _csrf: csrf })),
-                });
-                const fresh = res.headers.get('X-CSRF-Token');
-                if (fresh) otpForm.querySelector('input[name=_csrf]').value = fresh;
-                const json = await res.json();
-                if (!res.ok) throw new Error(json.error || 'Qayta yuborib bo\'lmadi');
-                document.getElementById('otp_phone').textContent = json.data.phone_masked || '';
-                document.getElementById('otp_challenge_id').value = json.data.challenge_id;
-                otpExpiresAt = Date.now() + ((json.data.expires_in || 300) * 1000);
-                startOtpTimer();
-                startResendCooldown(60);
-                otpCells.forEach(c => (c.value = ''));
-                otpCells[0]?.focus();
-            } catch (err) {
-                showError('otp_err', err.message);
-            }
-        });
-
-        // Focus first field
-        document.getElementById('li_phone').focus();
-    </script>
+document.getElementById('li_phone').focus();
+</script>
 </body>
 </html>

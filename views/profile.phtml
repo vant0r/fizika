@@ -12,239 +12,229 @@ use App\Core\Security;
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Profil — Physics National Certificate</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;800&family=Inter:wght@300;400;500;700;900&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = { theme: { extend: { colors: {
+            sky: {50:'#f0f9ff',100:'#e0f2fe',200:'#bae6fd',300:'#7dd3fc',400:'#38bdf8',500:'#0ea5e9',600:'#0284c7',700:'#0369a1',800:'#075985',900:'#0c4a6e'}
+        }}}}
+    </script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
     <style>
-        :root { --bd: 1px solid #000; }
-        html, body { background:#fff; color:#000; font-family:'Inter',sans-serif; }
-        .mono { font-family:'JetBrains Mono', monospace; letter-spacing:-.02em; }
-        .brutal { border: var(--bd); }
-        .brutal-thick { border: 2px solid #000; }
-        .hover-fill:hover { background:#f3f3f3; transition: background .12s; }
-        ::selection { background:#000; color:#fff; }
-        .cell { border-right: var(--bd); }
-        .cell:last-child { border-right:0; }
-        .row { border-top: var(--bd); }
-        .row:first-child { border-top:0; }
-        .btn-brutal { border: 2px solid #000; padding:.6rem 1.25rem; font-weight:700; text-transform:uppercase; letter-spacing:.04em; transition: all .12s; }
-        .btn-brutal:hover { background:#000; color:#fff; }
-        .btn-brutal:active { transform: translate(1px,1px); }
-        .progress { height:6px; background:#fff; border: var(--bd); position:relative; }
-        .progress > span { display:block; height:100%; background:#000; }
-        @keyframes slideUp { from { transform: translateY(20px); opacity:0; } to { transform: translateY(0); opacity:1; } }
-        .modal-card { animation: slideUp .35s cubic-bezier(.2,.7,.2,1); }
-        .ticker { white-space:nowrap; overflow:hidden; }
-        .ticker > div { display:inline-block; padding-left:100%; animation: ticker 30s linear infinite; }
-        @keyframes ticker { 0% { transform:translateX(0); } 100% { transform:translateX(-100%); } }
+        body { font-family:'Inter',sans-serif; background:#fafbfc; }
+        ::selection { background:#0ea5e9; color:#fff; }
+
+        .card { background:#fff; border-radius:16px; border:1px solid #e0f2fe; box-shadow:0 2px 12px rgba(14,165,233,.04); }
+        .card-accent { background: linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%); color:#fff; border:none; }
+        .stat-ring { width:60px; height:60px; border-radius:50%; display:flex; align-items:center; justify-content:center; }
+        .btn-primary { background:linear-gradient(135deg,#0ea5e9,#0284c7); color:#fff; border:none; border-radius:10px; padding:.65rem 1.2rem; font-weight:700; font-size:.85rem; cursor:pointer; transition:all .2s; }
+        .btn-primary:hover { transform:translateY(-1px); box-shadow:0 6px 20px rgba(14,165,233,.25); }
+        .btn-outline { border:1.5px solid #bae6fd; border-radius:10px; padding:.55rem 1rem; font-weight:600; font-size:.8rem; color:#0284c7; cursor:pointer; transition:all .2s; background:transparent; }
+        .btn-outline:hover { background:#f0f9ff; border-color:#0ea5e9; }
+        .progress-bar { height:6px; border-radius:3px; background:#e0f2fe; overflow:hidden; }
+        .progress-bar > span { display:block; height:100%; border-radius:3px; background:linear-gradient(90deg,#38bdf8,#0284c7); transition:width .6s; }
+        .badge { display:inline-flex; align-items:center; gap:4px; font-size:11px; font-weight:600; padding:3px 10px; border-radius:20px; }
+        .badge-sky { background:#e0f2fe; color:#0369a1; }
+        .badge-green { background:#dcfce7; color:#166534; }
+        .badge-red { background:#fee2e2; color:#991b1b; }
+        .table-row { transition:background .12s; }
+        .table-row:hover { background:#f0f9ff; }
     </style>
 </head>
-<body class="min-h-screen">
+<body>
 
-<!-- ============ NAV ============ -->
-<header class="brutal border-l-0 border-r-0 border-t-0 sticky top-0 bg-white z-30">
+
+<!-- ===== HEADER ===== -->
+<header class="bg-white border-b border-sky-100 sticky top-0 z-30">
     <div class="max-w-7xl mx-auto flex items-center justify-between px-6 py-3">
-        <div class="flex items-center gap-4">
-            <img src="<?= Security::eAttr($logo) ?>" alt="logo" class="h-8 w-8 brutal object-contain bg-white" onerror="this.style.display='none'">
-            <span class="mono font-extrabold tracking-tight text-lg">PHYSICS&nbsp;//&nbsp;CERT</span>
-        </div>
-        <nav class="flex items-center gap-1">
-            <a href="/profile" class="brutal px-3 py-1.5 text-xs uppercase tracking-widest hover-fill mono">Dashboard</a>
-            <a href="/exam?id=1" class="brutal px-3 py-1.5 text-xs uppercase tracking-widest hover-fill mono">Imtihonlar</a>
-            <button id="logoutBtn" class="brutal px-3 py-1.5 text-xs uppercase tracking-widest hover-fill mono">Chiqish</button>
+        <a href="/" class="flex items-center gap-3">
+            <div class="w-9 h-9 rounded-xl bg-gradient-to-br from-sky-400 to-sky-600 flex items-center justify-center shadow-sm shadow-sky-200">
+                <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+            </div>
+            <span class="text-base font-bold text-gray-900">Physics Cert</span>
+        </a>
+        <nav class="flex items-center gap-2">
+            <a href="/profile" class="btn-outline bg-sky-50">Dashboard</a>
+            <a href="/exam?id=1" class="btn-outline">Imtihonlar</a>
+            <button id="logoutBtn" class="btn-outline text-gray-500 border-gray-200 hover:border-red-200 hover:text-red-600 hover:bg-red-50">Chiqish</button>
         </nav>
-    </div>
-    <div class="brutal border-l-0 border-r-0 border-b-0 ticker text-[11px] mono uppercase tracking-widest py-1.5 bg-white">
-        <div>physics // cert &middot; milliy sertifikat &middot; bmba metodologiyasi &middot; 30 savol &middot; 120 daqiqa &middot; mathjax + virtual qoralama &middot; p2p telegram to'lov &middot; 50K+ foydalanuvchi &middot;</div>
     </div>
 </header>
 
-<main class="max-w-7xl mx-auto px-6 py-8 space-y-8">
+<main class="max-w-7xl mx-auto px-6 py-8 space-y-6">
 
-    <!-- ============ HERO / IDENTITY CARD ============ -->
-    <section class="brutal-thick">
-        <div class="grid grid-cols-1 lg:grid-cols-3">
-            <div class="cell p-8 lg:col-span-2">
-                <div class="text-xs uppercase tracking-widest mono mb-2">Foydalanuvchi</div>
-                <h1 class="text-4xl lg:text-5xl font-black leading-none"><?= Security::e((string) $user['fullname']) ?></h1>
-                <div class="mt-4 mono text-sm">
-                    <?= Security::e((string) $user['phone']) ?>
-                    &middot;
-                    <span class="uppercase tracking-widest"><?= Security::e((string) $user['role']) ?></span>
+    <!-- ===== USER IDENTITY CARD ===== -->
+    <section class="card-accent rounded-2xl overflow-hidden">
+        <div class="px-8 py-8 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
+            <div class="flex items-center gap-5">
+                <div class="w-16 h-16 rounded-2xl bg-white/20 flex items-center justify-center text-2xl font-black text-white/90">
+                    <?= mb_strtoupper(mb_substr((string) $user['fullname'], 0, 1)) ?>
                 </div>
-
-                <div class="mt-8 grid grid-cols-2 gap-0 brutal">
-                    <div class="cell p-4">
-                        <div class="text-[10px] uppercase tracking-widest mono opacity-60">Hisob ID</div>
-                        <div class="mono text-3xl font-extrabold mt-1" id="userIdBox">#<?= (int) $user['id'] ?></div>
-                    </div>
-                    <div class="p-4">
-                        <div class="text-[10px] uppercase tracking-widest mono opacity-60">Telegram</div>
-                        <div class="mono text-base mt-1">
-                            <?= !empty($user['tg_user_id'])
-                                ? Security::e('@bog\'langan (#' . $user['tg_user_id'] . ')')
-                                : '<span class="opacity-50">— bog\'lanmagan —</span>' ?>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <div class="p-8 flex flex-col justify-between bg-white">
                 <div>
-                    <div class="text-xs uppercase tracking-widest mono">Balans</div>
-                    <div class="mono text-5xl font-black leading-none mt-2">
-                        <?= number_format((float) $user['balance'], 0, '.', ' ') ?>
-                    </div>
-                    <div class="text-xs uppercase tracking-widest mono mt-1">so'm</div>
+                    <h1 class="text-2xl font-bold text-white"><?= Security::e((string) $user['fullname']) ?></h1>
+                    <p class="text-sky-100 text-sm mt-0.5"><?= Security::e((string) $user['phone']) ?> &middot; <?= ucfirst((string) $user['role']) ?></p>
                 </div>
-                <div class="mt-8 flex items-center justify-between">
-                    <div>
-                        <div class="text-xs uppercase tracking-widest mono">Mock kvota</div>
-                        <div class="mono text-3xl font-extrabold mt-1"><?= (int) $user['mock_quota'] ?></div>
-                    </div>
-                    <button id="openBuyModal" class="btn-brutal">+ Mock olish</button>
+            </div>
+            <div class="flex items-center gap-6 flex-wrap">
+                <div class="text-center">
+                    <div class="text-xs text-sky-200 uppercase tracking-wider">Hisob ID</div>
+                    <div class="text-2xl font-black text-white">#<?= (int) $user['id'] ?></div>
                 </div>
+                <div class="text-center">
+                    <div class="text-xs text-sky-200 uppercase tracking-wider">Balans</div>
+                    <div class="text-2xl font-black text-white"><?= number_format((float) $user['balance'], 0, '.', ' ') ?> <span class="text-sm font-medium text-sky-200">so'm</span></div>
+                </div>
+                <div class="text-center">
+                    <div class="text-xs text-sky-200 uppercase tracking-wider">Mock kvota</div>
+                    <div class="text-2xl font-black text-white"><?= (int) $user['mock_quota'] ?></div>
+                </div>
+                <button id="openBuyModal" class="bg-white text-sky-700 font-bold text-sm px-5 py-2.5 rounded-xl hover:shadow-lg hover:shadow-sky-900/20 transition">
+                    + Mock olish
+                </button>
             </div>
         </div>
     </section>
 
-    <!-- ============ STATS ============ -->
-    <section class="brutal-thick grid grid-cols-1 md:grid-cols-3">
-        <div class="cell p-8">
-            <div class="text-[10px] uppercase tracking-widest mono opacity-60">Topshirilgan imtihonlar</div>
-            <div class="mono text-4xl font-extrabold mt-2"><?= (int) ($stats['total'] ?? 0) ?></div>
-        </div>
-        <div class="cell p-8">
-            <div class="text-[10px] uppercase tracking-widest mono opacity-60">O'rtacha ball</div>
-            <div class="mono text-4xl font-extrabold mt-2">
-                <?= number_format((float) ($stats['avg_score'] ?? 0), 1, '.', ' ') ?>
+
+    <!-- ===== STATS CARDS ===== -->
+    <section class="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div class="card p-6 flex items-center gap-4">
+            <div class="stat-ring bg-sky-50">
+                <svg class="w-6 h-6 text-sky-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
             </div>
-            <div class="progress mt-3"><span style="width: <?= max(0, min(100, (float) ($stats['avg_score'] ?? 0))) ?>%"></span></div>
-        </div>
-        <div class="p-8">
-            <div class="text-[10px] uppercase tracking-widest mono opacity-60">Eng yuqori</div>
-            <div class="mono text-4xl font-extrabold mt-2">
-                <?= number_format((float) ($stats['best_score'] ?? 0), 1, '.', ' ') ?>
+            <div>
+                <div class="text-xs text-gray-500 uppercase tracking-wider font-medium">Topshirilgan</div>
+                <div class="text-2xl font-bold text-gray-900"><?= (int) ($stats['total'] ?? 0) ?></div>
             </div>
-            <div class="progress mt-3"><span style="width: <?= max(0, min(100, (float) ($stats['best_score'] ?? 0))) ?>%"></span></div>
+        </div>
+        <div class="card p-6 flex items-center gap-4">
+            <div class="stat-ring bg-emerald-50">
+                <svg class="w-6 h-6 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/></svg>
+            </div>
+            <div>
+                <div class="text-xs text-gray-500 uppercase tracking-wider font-medium">O'rtacha ball</div>
+                <div class="text-2xl font-bold text-gray-900"><?= number_format((float) ($stats['avg_score'] ?? 0), 1) ?></div>
+                <div class="progress-bar w-32 mt-1"><span style="width:<?= max(0, min(100, (float)($stats['avg_score'] ?? 0))) ?>%"></span></div>
+            </div>
+        </div>
+        <div class="card p-6 flex items-center gap-4">
+            <div class="stat-ring bg-amber-50">
+                <svg class="w-6 h-6 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z"/></svg>
+            </div>
+            <div>
+                <div class="text-xs text-gray-500 uppercase tracking-wider font-medium">Eng yuqori</div>
+                <div class="text-2xl font-bold text-gray-900"><?= number_format((float) ($stats['best_score'] ?? 0), 1) ?></div>
+                <div class="progress-bar w-32 mt-1"><span style="width:<?= max(0, min(100, (float)($stats['best_score'] ?? 0))) ?>%"></span></div>
+            </div>
         </div>
     </section>
 
-    <!-- ============ RECENT EXAMS ============ -->
-    <section>
-        <div class="flex items-baseline justify-between mb-4">
-            <h2 class="mono text-2xl font-extrabold">[ Oxirgi imtihonlar ]</h2>
-            <span class="text-xs uppercase tracking-widest mono opacity-60">10 ta yozuv</span>
+    <!-- ===== RECENT EXAMS TABLE ===== -->
+    <section class="card overflow-hidden">
+        <div class="px-6 py-5 border-b border-sky-50 flex items-center justify-between">
+            <h2 class="text-lg font-bold text-gray-900">Oxirgi imtihonlar</h2>
+            <span class="badge badge-sky"><?= count($recent) ?> ta</span>
         </div>
         <?php if (empty($recent)): ?>
-            <div class="brutal p-8 text-center mono uppercase tracking-widest text-sm opacity-60">
-                — Hozircha topshirilgan imtihon yo'q —
-            </div>
+            <div class="p-12 text-center text-gray-400 text-sm">Hozircha topshirilgan imtihon yo'q</div>
         <?php else: ?>
-            <div class="brutal-thick">
-                <div class="grid grid-cols-12 row text-[10px] uppercase tracking-widest mono bg-white">
-                    <div class="cell p-3 col-span-4">Imtihon</div>
-                    <div class="cell p-3 col-span-1 text-center">Ball</div>
-                    <div class="cell p-3 col-span-1 text-center">To'g'ri</div>
-                    <div class="cell p-3 col-span-1 text-center">Xato</div>
-                    <div class="cell p-3 col-span-1 text-center">Bo'sh</div>
-                    <div class="cell p-3 col-span-2 text-center">Sana</div>
-                    <div class="p-3 col-span-2 text-center">Bo'limlar tahlili</div>
-                </div>
-                <?php foreach ($recent as $r): ?>
-                    <?php
-                        $sections  = $r['section_analysis'] ?: [];
-                        $weakList  = array_filter($sections, fn($s) => !empty($s['weakness']));
-                        $weakNames = array_map(fn($s) => $s['section'] . ' (' . $s['percent'] . '%)', $weakList);
-                    ?>
-                    <div class="grid grid-cols-12 row hover-fill text-sm">
-                        <div class="cell p-3 col-span-4 mono"><?= Security::e((string) $r['exam_title']) ?></div>
-                        <div class="cell p-3 col-span-1 text-center mono font-bold">
-                            <?= number_format((float) $r['score'], 1, '.', ' ') ?>
-                        </div>
-                        <div class="cell p-3 col-span-1 text-center mono"><?= (int) $r['correct_count'] ?></div>
-                        <div class="cell p-3 col-span-1 text-center mono"><?= (int) $r['wrong_count'] ?></div>
-                        <div class="cell p-3 col-span-1 text-center mono"><?= (int) $r['skipped_count'] ?></div>
-                        <div class="cell p-3 col-span-2 text-center mono text-xs">
-                            <?= Security::e(date('Y-m-d H:i', strtotime((string) $r['finished_at']))) ?>
-                        </div>
-                        <div class="p-3 col-span-2 text-xs">
-                            <?php if ($weakNames !== []): ?>
-                                <span class="brutal px-2 py-0.5 mono uppercase">Zaif: <?= Security::e(implode(', ', $weakNames)) ?></span>
-                            <?php else: ?>
-                                <span class="opacity-50 mono uppercase">Mukammal</span>
-                            <?php endif; ?>
-                        </div>
-                    </div>
-                <?php endforeach; ?>
+            <div class="overflow-x-auto">
+                <table class="w-full text-sm">
+                    <thead class="bg-sky-50/50">
+                        <tr class="text-xs text-gray-500 uppercase tracking-wider">
+                            <th class="px-6 py-3 text-left font-semibold">Imtihon</th>
+                            <th class="px-4 py-3 text-center font-semibold">Ball</th>
+                            <th class="px-4 py-3 text-center font-semibold">To'g'ri</th>
+                            <th class="px-4 py-3 text-center font-semibold">Xato</th>
+                            <th class="px-4 py-3 text-center font-semibold">Bo'sh</th>
+                            <th class="px-4 py-3 text-center font-semibold">Sana</th>
+                            <th class="px-4 py-3 text-left font-semibold">Tahlil</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-sky-50">
+
+                        <?php foreach ($recent as $r):
+                            $sections = $r['section_analysis'] ?: [];
+                            $weakList = array_filter($sections, fn($s) => !empty($s['weakness']));
+                            $weakNames = array_map(fn($s) => $s['section'] . ' ' . $s['percent'] . '%', $weakList);
+                        ?>
+                        <tr class="table-row">
+                            <td class="px-6 py-4 font-medium text-gray-900"><?= Security::e((string) $r['exam_title']) ?></td>
+                            <td class="px-4 py-4 text-center">
+                                <span class="inline-block bg-sky-50 text-sky-700 font-bold px-2.5 py-1 rounded-lg text-sm">
+                                    <?= number_format((float) $r['score'], 1) ?>
+                                </span>
+                            </td>
+                            <td class="px-4 py-4 text-center text-emerald-600 font-semibold"><?= (int) $r['correct_count'] ?></td>
+                            <td class="px-4 py-4 text-center text-red-500 font-semibold"><?= (int) $r['wrong_count'] ?></td>
+                            <td class="px-4 py-4 text-center text-gray-400"><?= (int) $r['skipped_count'] ?></td>
+                            <td class="px-4 py-4 text-center text-xs text-gray-500"><?= Security::e(date('d.m.Y H:i', strtotime((string) $r['finished_at']))) ?></td>
+                            <td class="px-4 py-4">
+                                <?php if ($weakNames !== []): ?>
+                                    <span class="badge badge-red">Zaif: <?= Security::e(implode(', ', $weakNames)) ?></span>
+                                <?php else: ?>
+                                    <span class="badge badge-green">Mukammal</span>
+                                <?php endif; ?>
+                            </td>
+                        </tr>
+                        <?php endforeach; ?>
+                    </tbody>
+                </table>
             </div>
         <?php endif; ?>
     </section>
 
-    <!-- ============ SECTION HEATMAP (last exam) ============ -->
+    <!-- ===== SECTION ANALYSIS (last exam) ===== -->
     <?php if (!empty($recent[0]['section_analysis'])): ?>
-        <section>
-            <h2 class="mono text-2xl font-extrabold mb-4">[ Bo'limlar bo'yicha tahlil ]</h2>
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-0 brutal-thick">
-                <?php foreach ($recent[0]['section_analysis'] as $idx => $s): ?>
-                    <div class="<?= $idx % 4 !== 3 ? 'cell' : '' ?> p-6 row">
-                        <div class="text-[10px] uppercase tracking-widest mono opacity-60"><?= Security::e((string) $s['section']) ?></div>
-                        <div class="mono text-3xl font-extrabold mt-1"><?= Security::e((string) $s['percent']) ?>%</div>
-                        <div class="text-xs mono mt-1"><?= (int) $s['correct'] ?>/<?= (int) $s['total'] ?> to'g'ri</div>
-                        <div class="progress mt-3"><span style="width: <?= (float) $s['percent'] ?>%"></span></div>
-                        <?php if (!empty($s['weakness'])): ?>
-                            <div class="mt-3 text-[10px] uppercase tracking-widest mono">[ZAIF NUQTA]</div>
-                        <?php endif; ?>
-                    </div>
-                <?php endforeach; ?>
+    <section class="card p-6">
+        <h2 class="text-lg font-bold text-gray-900 mb-4">Bo'limlar bo'yicha tahlil</h2>
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <?php foreach ($recent[0]['section_analysis'] as $s): ?>
+            <div class="bg-sky-50/50 rounded-xl p-4 border border-sky-100">
+                <div class="text-xs text-gray-500 uppercase tracking-wider font-medium"><?= Security::e((string) $s['section']) ?></div>
+                <div class="text-2xl font-bold text-gray-900 mt-1"><?= Security::e((string) $s['percent']) ?>%</div>
+                <div class="text-xs text-gray-500 mt-0.5"><?= (int) $s['correct'] ?>/<?= (int) $s['total'] ?> to'g'ri</div>
+                <div class="progress-bar mt-2"><span style="width:<?= (float) $s['percent'] ?>%"></span></div>
+                <?php if (!empty($s['weakness'])): ?>
+                    <span class="badge badge-red mt-2 text-[10px]">Zaif nuqta</span>
+                <?php endif; ?>
             </div>
-        </section>
+            <?php endforeach; ?>
+        </div>
+    </section>
     <?php endif; ?>
 
 </main>
 
-<!-- ============ MOCK / TARIFF MODAL ============ -->
-<div id="buyModal" class="fixed inset-0 hidden items-center justify-center bg-black/30 z-50 px-4">
-    <div class="modal-card brutal-thick bg-white max-w-2xl w-full">
-        <div class="flex items-center justify-between p-5 brutal border-l-0 border-r-0 border-t-0">
+
+<!-- ===== BUY MODAL ===== -->
+<div id="buyModal" class="fixed inset-0 hidden items-center justify-center bg-black/30 backdrop-blur-sm z-50 px-4">
+    <div class="bg-white rounded-2xl border border-sky-100 max-w-lg w-full shadow-xl">
+        <div class="px-6 py-5 border-b border-sky-50 flex items-center justify-between">
             <div>
-                <div class="text-xs uppercase tracking-widest mono opacity-60">To'lov</div>
-                <h3 class="mono text-2xl font-extrabold leading-none">[ TARIFLAR ]</h3>
+                <h3 class="text-xl font-bold text-gray-900">Mock tarifi olish</h3>
+                <p class="text-xs text-gray-500 mt-0.5">Telegram bot orqali to'lov</p>
             </div>
-            <button id="closeBuyModal" class="brutal px-3 py-1.5 text-xs uppercase tracking-widest hover-fill mono">[X]</button>
+            <button id="closeBuyModal" class="w-8 h-8 rounded-lg bg-sky-50 hover:bg-sky-100 flex items-center justify-center text-sky-600 transition">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+            </button>
         </div>
-
         <div class="p-6">
-            <div class="brutal p-4 mono text-sm leading-relaxed">
-                To'lov uchun botga o'ting. Bot sizdan ID raqamingizni so'raydi:<br>
-                <span class="mono text-xl font-extrabold">ID: #<?= (int) $user['id'] ?></span>
+            <div class="bg-sky-50 rounded-xl p-4 text-center mb-5">
+                <p class="text-sm text-gray-700">Bot sizdan ID raqamingizni so'raydi:</p>
+                <p class="text-3xl font-black text-sky-700 mt-1">#<?= (int) $user['id'] ?></p>
             </div>
-
-            <div id="tariffList" class="mt-5 space-y-3">
-                <div class="brutal p-4 mono text-sm opacity-60">Yuklanmoqda...</div>
+            <div id="tariffList" class="space-y-3">
+                <div class="text-center text-sm text-gray-400 py-4">Yuklanmoqda...</div>
             </div>
-
-            <a id="botLink" href="#" target="_blank" rel="noopener"
-               class="btn-brutal mt-6 w-full text-center block">
-                → Telegram botga o'tish
+            <a id="botLink" href="#" target="_blank" rel="noopener" class="btn-primary block text-center mt-5">
+                Telegram botga o'tish →
             </a>
-
-            <div class="mt-4 text-[11px] mono uppercase tracking-widest opacity-60">
-                * Chek rasmini yuborgach, administrator 5-30 daqiqada tasdiqlaydi.
-            </div>
+            <p class="text-xs text-gray-400 text-center mt-3">Chek rasmini yuborgach, admin 5–30 daqiqada tasdiqlaydi.</p>
         </div>
     </div>
 </div>
 
-<footer class="brutal border-l-0 border-r-0 border-b-0 mt-8">
-    <div class="max-w-7xl mx-auto px-6 py-3 flex items-center justify-between text-[11px] mono uppercase tracking-widest">
-        <span>&copy; 2026 phys.cert</span>
-        <span>HSTS &middot; CSP &middot; Argon2id &middot; JWT</span>
-    </div>
-</footer>
-
 <script>
 const USER_ID = <?= (int) $user['id'] ?>;
-const CSRF_BUY = <?= json_encode($csrfBuy, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_UNESCAPED_UNICODE) ?>;
-
 const $modal = document.getElementById('buyModal');
 document.getElementById('openBuyModal').addEventListener('click', openBuyModal);
 document.getElementById('closeBuyModal').addEventListener('click', closeBuyModal);
@@ -252,56 +242,26 @@ $modal.addEventListener('click', (e) => { if (e.target === $modal) closeBuyModal
 document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && !$modal.classList.contains('hidden')) closeBuyModal(); });
 
 async function openBuyModal() {
-    $modal.classList.remove('hidden');
-    $modal.classList.add('flex');
+    $modal.classList.remove('hidden'); $modal.classList.add('flex');
     try {
-        const res = await fetch('/api/tariffs', { headers: { 'X-Requested-With': 'XMLHttpRequest' } });
-        const json = await res.json();
-        if (!res.ok) throw new Error(json.error || 'Tariflarni olishda xato');
-
-        const list = document.getElementById('tariffList');
-        list.innerHTML = '';
+        const res = await fetch('/api/tariffs', {headers:{'X-Requested-With':'XMLHttpRequest'}});
+        const json = await res.json(); if (!res.ok) throw new Error(json.error || 'Xato');
+        const list = document.getElementById('tariffList'); list.innerHTML = '';
         json.items.forEach(t => {
-            const card = document.createElement('div');
-            card.className = 'brutal p-4 hover-fill flex items-center justify-between';
-            card.innerHTML = `
-                <div>
-                    <div class="mono text-lg font-extrabold">${escapeHtml(t.name)}</div>
-                    <div class="text-xs mono opacity-60 mt-0.5">${escapeHtml(t.description || '')}</div>
-                    <div class="text-xs mono mt-1">${t.mock_count} ta mock imtihon</div>
-                </div>
-                <div class="text-right">
-                    <div class="mono text-2xl font-black">${formatNum(t.price)}</div>
-                    <div class="text-[10px] uppercase tracking-widest mono">so'm</div>
-                </div>
-            `;
-            list.appendChild(card);
+            const el = document.createElement('div');
+            el.className = 'flex items-center justify-between p-4 rounded-xl border border-sky-100 hover:border-sky-300 hover:bg-sky-50/50 transition';
+            el.innerHTML = `<div><div class="font-bold text-gray-900">${esc(t.name)}</div><div class="text-xs text-gray-500 mt-0.5">${t.mock_count} ta mock &middot; ${esc(t.description||'')}</div></div><div class="text-right"><div class="text-lg font-black text-sky-700">${fmtNum(t.price)}</div><div class="text-[10px] text-gray-400 uppercase">so'm</div></div>`;
+            list.appendChild(el);
         });
+        document.getElementById('botLink').href = `https://t.me/${json.bot_username}?start=${USER_ID}`;
+    } catch (err) { document.getElementById('tariffList').innerHTML = `<div class="text-center text-sm text-red-500 py-4">${esc(err.message)}</div>`; }
+}
+function closeBuyModal() { $modal.classList.add('hidden'); $modal.classList.remove('flex'); }
+function esc(s) { return String(s??'').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+function fmtNum(n) { return new Intl.NumberFormat('fr-FR').format(Number(n)||0); }
 
-        const url = `https://t.me/${json.bot_username}?start=${USER_ID}`;
-        document.getElementById('botLink').href = url;
-    } catch (err) {
-        document.getElementById('tariffList').innerHTML =
-            `<div class="brutal p-4 mono text-sm">Xato: ${escapeHtml(err.message)}</div>`;
-    }
-}
-function closeBuyModal() {
-    $modal.classList.add('hidden');
-    $modal.classList.remove('flex');
-}
-
-function escapeHtml(s) {
-    return String(s ?? '').replace(/[&<>"']/g, c => ({
-        '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
-    }[c]));
-}
-function formatNum(n) {
-    return new Intl.NumberFormat('fr-FR').format(Number(n) || 0);
-}
-
-// Logout
 document.getElementById('logoutBtn').addEventListener('click', async () => {
-    await fetch('/api/auth/logout', { method:'POST', headers: { 'X-Requested-With':'XMLHttpRequest' } });
+    await fetch('/api/auth/logout', {method:'POST', headers:{'X-Requested-With':'XMLHttpRequest'}});
     window.location.href = '/auth';
 });
 </script>
