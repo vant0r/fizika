@@ -33,6 +33,34 @@ final class AdminController
     private const SVG_MIME           = 'image/svg+xml';
     private const MAX_IMG_BYTES      = 5 * 1024 * 1024; // 5 MB
 
+    /**
+     * Resolves the absolute filesystem path for uploads, supporting BOTH:
+     *   - Standard layout: project_root/public/uploads/...
+     *   - Flat layout (x10hosting): public_html/uploads/...
+     */
+    private static function uploadsBasePath(): string
+    {
+        $root = realpath(__DIR__ . '/../..');
+        if ($root === false) {
+            $root = dirname(__DIR__, 2);
+        }
+        // Standard layout
+        if (is_dir($root . '/public/uploads')) {
+            return $root . '/public';
+        }
+        // Flat layout (x10hosting)
+        if (is_dir($root . '/uploads')) {
+            return $root;
+        }
+        // Try via DOCUMENT_ROOT
+        $docRoot = $_SERVER['DOCUMENT_ROOT'] ?? '';
+        if ($docRoot !== '' && is_dir($docRoot . '/uploads')) {
+            return $docRoot;
+        }
+        // Default: flat layout (install.php creates uploads/ in flat mode)
+        return $root;
+    }
+
     /* ============================================================
      *  ADMIN PANEL (HTML)
      * ============================================================ */
@@ -759,7 +787,7 @@ final class AdminController
         Security::requireCsrf('admin', false);
         $cur = Database::selectOne("SELECT `value` FROM system_settings WHERE `key` = 'site_banner'");
         if ($cur && !empty($cur['value'])) {
-            $abs = realpath(__DIR__ . '/../../public') . $cur['value'];
+            $abs = self::uploadsBasePath() . $cur['value'];
             if (is_file($abs)) @unlink($abs);
         }
         self::upsertSetting('site_banner', '', (int) $admin['id']);
@@ -810,7 +838,7 @@ final class AdminController
         $list = array_values(array_filter($list, fn($p) => $p !== $target));
 
         // Remove file from disk if local
-        $abs = realpath(__DIR__ . '/../../public') . $target;
+        $abs = self::uploadsBasePath() . $target;
         if (is_file($abs)) @unlink($abs);
 
         self::upsertSetting('slider_images', json_encode($list, JSON_UNESCAPED_UNICODE), (int) $admin['id']);
@@ -879,7 +907,7 @@ final class AdminController
 
         // 5) Build target path
         $name = sprintf('%s_%s.%s', date('Ymd_His'), bin2hex(random_bytes(8)), $ext);
-        $absDir = realpath(__DIR__ . '/../../public') . $relDir;
+        $absDir = self::uploadsBasePath() . $relDir;
         if (!is_dir($absDir) && !mkdir($absDir, 0775, true) && !is_dir($absDir)) {
             self::json(['error' => 'Saqlash papkasi yaratilmadi'], 500);
         }
