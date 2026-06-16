@@ -110,10 +110,14 @@ if ($_envMissing) {
         fwrite(STDERR, "Missing required env var. Run install.php or create .env\n");
         exit(1);
     }
-    // If install.php exists, redirect there; otherwise show friendly error
-    $installPath = (is_file(__DIR__ . '/public/install.php'))
-        ? '/install.php'
-        : null;
+    // Detect install.php location (both flat and standard layouts)
+    $installPath = null;
+    if (is_file(__DIR__ . '/public/install.php')) {
+        $installPath = '/install.php';
+    } elseif (is_file(__DIR__ . '/install.php')) {
+        // Flat layout (x10hosting): install.php sits next to bootstrap.php
+        $installPath = '/install.php';
+    }
     if ($installPath !== null) {
         // Don't redirect if already on install.php (infinite loop guard)
         $currentUri = parse_url((string)($_SERVER['REQUEST_URI'] ?? ''), PHP_URL_PATH) ?: '';
@@ -131,7 +135,7 @@ if ($_envMissing) {
     echo '<h1>Configuration Error</h1>';
     echo '<p>.env fayli topilmadi yoki APP_KEY/DB sozlanmagan.</p>';
     echo '<p>Iltimos, <code>.env.example</code> faylini <code>.env</code> ga nusxalab, sozlamalarni kiriting.</p>';
-    echo '<p>Yoki <code>public/install.php</code> faylini serverga yuklang.</p>';
+    echo '<p>Yoki <code>install.php</code> faylini serverga yuklang.</p>';
     echo '</body></html>';
     exit;
 }
